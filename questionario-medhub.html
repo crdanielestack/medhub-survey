@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedHub AI — Ricerca sul Campo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --ink:#0D1B2A; --paper:#F5F0E8; --cream:#EDE8DC;
+  --accent:#C8421A; --accent2:#1A6B8A; --gold:#B8860B;
+  --muted:#8A7F72; --white:#FDFAF5; --error:#C0392B;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden;}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .5s cubic-bezier(.4,0,.2,1);z-index:100;box-shadow:0 0 12px rgba(200,66,26,.4);}
+header{position:fixed;top:0;left:0;right:0;background:var(--ink);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.logo{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--white);}
+.logo span{color:var(--accent);}
+.step-counter{font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.08em;text-transform:uppercase;}
+main{max-width:700px;margin:0 auto;padding:100px 24px 80px;}
+.slide{display:none;}
+.slide.active{display:block;animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+/* COVER */
+.cover-wrap{min-height:calc(100vh - 100px);display:flex;flex-direction:column;justify-content:center;}
+.cover-tag{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border:1.5px solid var(--accent);padding:4px 12px;border-radius:2px;margin-bottom:28px;}
+.cover-title{font-family:'DM Serif Display',serif;font-size:clamp(2.4rem,6vw,3.8rem);line-height:1.1;margin-bottom:24px;}
+.cover-title em{color:var(--accent2);font-style:italic;}
+.cover-sub{font-size:1rem;color:var(--muted);line-height:1.75;max-width:520px;margin-bottom:36px;}
+.cover-meta{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:44px;}
+.meta-pill{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);font-weight:500;}
+.meta-pill::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;}
+
+/* INFO */
+.info-hero{background:var(--ink);border-radius:8px;padding:40px;margin-bottom:32px;}
+.info-hero h2{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--white);margin-bottom:12px;}
+.info-hero p{color:#94A3B8;line-height:1.7;font-size:.95rem;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+@media(max-width:580px){.info-grid{grid-template-columns:1fr;}}
+.info-card{background:var(--white);border-radius:6px;padding:22px;border-top:3px solid var(--accent);}
+.info-card-num{font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:7px;}
+.info-card h3{font-size:.98rem;font-weight:600;margin-bottom:7px;}
+.info-card p{font-size:.84rem;color:var(--muted);line-height:1.6;}
+.info-topics{background:var(--white);border-radius:6px;padding:26px;margin-bottom:28px;}
+.info-topics h3{font-size:.98rem;font-weight:600;margin-bottom:14px;}
+.topic-row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--cream);}
+.topic-row:last-child{border-bottom:none;}
+.topic-icon{font-size:1.1rem;min-width:24px;}
+.topic-text strong{font-size:.88rem;display:block;margin-bottom:2px;}
+.topic-text span{font-size:.8rem;color:var(--muted);}
+.info-reward{background:linear-gradient(135deg,#0D1B2A,#1A3A5C);border-radius:6px;padding:26px;color:var(--white);margin-bottom:28px;display:flex;gap:18px;align-items:flex-start;}
+.reward-icon{font-size:2.2rem;}
+.reward-text h3{font-size:1rem;font-weight:600;margin-bottom:7px;}
+.reward-text p{font-size:.86rem;color:#94A3B8;line-height:1.6;}
+
+/* SECTION */
+.section-header{margin-bottom:32px;padding-bottom:18px;border-bottom:1px solid var(--cream);}
+.section-num{font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:7px;}
+.section-title{font-family:'DM Serif Display',serif;font-size:1.85rem;line-height:1.2;margin-bottom:7px;}
+.section-desc{font-size:.89rem;color:var(--muted);line-height:1.6;}
+
+/* QUESTIONS */
+.question-block{margin-bottom:28px;}
+.q-label{font-size:.98rem;font-weight:500;line-height:1.5;margin-bottom:5px;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;}
+.q-num{color:var(--accent);font-weight:600;}
+.required-badge{font-size:.67rem;color:var(--error);font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:#FEF0EE;padding:2px 7px;border-radius:10px;margin-left:4px;}
+.q-hint{font-size:.8rem;color:var(--muted);margin-bottom:12px;font-style:italic;}
+.options{display:flex;flex-direction:column;gap:8px;}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 15px;background:var(--white);border:1.5px solid transparent;border-radius:6px;cursor:pointer;transition:all .18s ease;position:relative;}
+.opt:hover{border-color:var(--accent2);background:#EDF5F9;}
+.opt.selected{border-color:var(--accent);background:#FDF3EF;}
+.opt input{position:absolute;opacity:0;pointer-events:none;}
+.opt-marker{width:19px;height:19px;min-width:19px;border:2px solid #C4B9AA;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px;}
+.opt.checkbox .opt-marker{border-radius:3px;}
+.opt.selected .opt-marker{border-color:var(--accent);background:var(--accent);}
+.opt.selected .opt-marker::after{content:'';width:6px;height:6px;background:white;border-radius:50%;}
+.opt.checkbox.selected .opt-marker::after{content:'✓';color:white;font-size:10px;font-weight:700;border-radius:0;background:transparent;}
+.opt-text{font-size:.88rem;line-height:1.5;}
+.field-error{display:none;font-size:.78rem;color:var(--error);margin-top:7px;padding:7px 11px;background:#FEF0EE;border-radius:4px;border-left:3px solid var(--error);}
+.field-error.visible{display:block;}
+.text-input{width:100%;background:var(--white);border:1.5px solid #D4C9BA;border-radius:6px;padding:12px 15px;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--ink);transition:border-color .2s;resize:vertical;outline:none;}
+.text-input:focus{border-color:var(--accent2);}
+.text-input.invalid{border-color:var(--error);}
+.text-input::placeholder{color:#B8AFA4;}
+
+/* ANAGRAFICA */
+.ana-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:500px){.ana-grid{grid-template-columns:1fr;}}
+.ana-field label{display:block;font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.ana-field input{width:100%;background:var(--white);border:1.5px solid #D4C9BA;border-radius:6px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--ink);outline:none;transition:border-color .2s;}
+.ana-field input:focus{border-color:var(--accent2);}
+.ana-field input.invalid{border-color:var(--error);}
+.ana-field input::placeholder{color:#B8AFA4;}
+.ana-field.full{grid-column:1/-1;}
+
+/* HOURS */
+.hours-grid{display:flex;flex-direction:column;gap:7px;}
+.hour-row{display:flex;align-items:center;gap:11px;background:var(--white);padding:10px 14px;border-radius:6px;border:1.5px solid #E0D8CE;}
+.hour-row span{flex:1;font-size:.86rem;}
+.hour-input{width:68px;padding:6px 9px;border:1.5px solid #D4C9BA;border-radius:4px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:var(--paper);}
+.hour-input:focus{border-color:var(--accent2);}
+
+/* SCALE */
+.scale-wrap{overflow-x:auto;}
+.scale-table{width:100%;border-collapse:collapse;min-width:460px;}
+.scale-table th{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 5px;text-align:center;}
+.scale-table th:first-child{text-align:left;}
+.scale-table td{padding:9px 5px;border-top:1px solid #E0D8CE;font-size:.84rem;vertical-align:middle;}
+.scale-table tr:nth-child(even) td{background:var(--white);}
+.scale-table td:not(:first-child){text-align:center;}
+.scale-radio{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+
+/* CONDITIONAL */
+.conditional-box{background:#EDF5F9;border-left:3px solid var(--accent2);border-radius:0 6px 6px 0;padding:14px 18px;margin-top:9px;display:none;}
+.conditional-box.visible{display:block;}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:11px;align-items:center;margin-top:40px;flex-wrap:wrap;}
+.btn-primary{background:var(--ink);color:var(--white);border:none;border-radius:4px;padding:13px 30px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:all .2s;}
+.btn-primary:hover{background:var(--accent);transform:translateY(-1px);box-shadow:0 8px 24px rgba(200,66,26,.25);}
+.btn-primary:disabled{background:#C4B9AA;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-back{background:transparent;color:var(--muted);border:1.5px solid #D4C9BA;border-radius:4px;padding:13px 20px;font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer;transition:all .2s;}
+.btn-back:hover{border-color:var(--ink);color:var(--ink);}
+.validation-banner{display:none;background:#FEF0EE;border:1.5px solid var(--error);border-radius:6px;padding:12px 16px;margin-top:14px;font-size:.85rem;color:var(--error);font-weight:500;}
+.validation-banner.visible{display:block;}
+
+/* SENDING */
+.sending-overlay{position:fixed;inset:0;background:rgba(13,27,42,.88);display:none;align-items:center;justify-content:center;z-index:200;}
+.sending-overlay.active{display:flex;}
+.sending-box{background:var(--white);border-radius:8px;padding:38px 46px;text-align:center;}
+.spinner{width:36px;height:36px;margin:0 auto 16px;border:3px solid #E0D8CE;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* PERSONA RESULT */
+.persona-wrap{min-height:calc(100vh - 100px);display:flex;flex-direction:column;justify-content:center;}
+.persona-card{background:var(--ink);border-radius:12px;padding:44px 38px;margin-bottom:28px;position:relative;overflow:hidden;}
+.persona-card::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(200,66,26,.15),transparent 70%);}
+.persona-emoji{font-size:3.8rem;margin-bottom:18px;}
+.persona-tag{font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+.persona-name{font-family:'DM Serif Display',serif;font-size:2.2rem;color:var(--white);line-height:1.1;margin-bottom:14px;}
+.persona-desc{font-size:.93rem;color:#94A3B8;line-height:1.75;margin-bottom:26px;}
+.score-bar-wrap{margin-bottom:7px;}
+.score-label{display:flex;justify-content:space-between;font-size:.76rem;color:#94A3B8;margin-bottom:5px;}
+.score-bar-bg{background:rgba(255,255,255,.1);border-radius:99px;height:7px;}
+.score-bar-fill{height:7px;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+.persona-traits{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;}
+.trait-pill{font-size:.76rem;padding:3px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.15);color:#94A3B8;}
+.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+@media(max-width:480px){.insight-grid{grid-template-columns:1fr;}}
+.insight-card{background:var(--white);border-radius:6px;padding:18px;}
+.insight-card-label{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.insight-card-val{font-size:1.02rem;font-weight:600;color:var(--ink);}
+.pdf-btn{background:var(--accent);color:white;border:none;border-radius:4px;padding:15px 30px;font-family:'DM Sans',sans-serif;font-size:.93rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:9px;}
+.pdf-btn:hover{background:#A33514;transform:translateY(-1px);}
+.thanks-note{font-size:.84rem;color:var(--muted);line-height:1.6;margin-top:18px;}
+</style>
+</head>
+<body>
+
+<div id="progress-bar" style="width:0%"></div>
+<header>
+  <div class="logo">Med<span>Hub</span> AI</div>
+  <div class="step-counter" id="step-label">Ricerca sul campo</div>
+</header>
+<main>
+
+<!-- SLIDE 0: COVER -->
+<div class="slide active" id="slide-0">
+  <div class="cover-wrap">
+    <div class="cover-tag">Ricerca — 2026</div>
+    <h1 class="cover-title">Come lavori davvero,<br><em>Dottore?</em></h1>
+    <p class="cover-sub">Stiamo costruendo una piattaforma AI pensata esclusivamente per i medici specialisti privati italiani. Prima di scrivere una riga di codice, vogliamo capire i problemi reali — dalla voce dei professionisti.</p>
+    <div class="cover-meta">
+      <div class="meta-pill">6–8 minuti</div>
+      <div class="meta-pill">19 domande</div>
+      <div class="meta-pill">Profilo PDF in omaggio</div>
+    </div>
+    <div class="btn-row"><button class="btn-primary" onclick="goTo(1)">Scopri di più →</button></div>
+  </div>
+</div>
+
+<!-- SLIDE 1: INFO -->
+<div class="slide" id="slide-1">
+  <div class="info-hero">
+    <h2>Perché questo questionario?</h2>
+    <p>Troppi strumenti digitali per medici sono stati costruiti da persone che non hanno mai vissuto un ambulatorio. Vogliamo fare diversamente: partire dai problemi reali, misurarli, e costruire una soluzione che valga davvero il tuo tempo.</p>
+  </div>
+  <div class="info-grid">
+    <div class="info-card"><div class="info-card-num">Obiettivo 01</div><h3>Mappare il tempo perso</h3><p>Quantificare le ore dedicate ad attività non cliniche automatizzabili.</p></div>
+    <div class="info-card"><div class="info-card-num">Obiettivo 02</div><h3>Capire la struttura reale</h3><p>Ogni configurazione organizzativa genera problemi diversi e specifici.</p></div>
+    <div class="info-card"><div class="info-card-num">Obiettivo 03</div><h3>Misurare l'impatto economico</h3><p>Tradurre in ore e euro i problemi non risolti: no-show, burocrazia, acquisizione pazienti.</p></div>
+    <div class="info-card"><div class="info-card-num">Obiettivo 04</div><h3>Valutare la propensione all'AI</h3><p>Capire dove si trova la categoria rispetto all'adozione di strumenti digitali.</p></div>
+  </div>
+  <div class="info-topics">
+    <h3>Le sezioni del questionario</h3>
+    <div class="topic-row"><div class="topic-icon">🪪</div><div class="topic-text"><strong>Dati di contatto</strong><span>Nome, cognome, email, telefono e regione per tenerti aggiornato</span></div></div>
+    <div class="topic-row"><div class="topic-icon">👤</div><div class="topic-text"><strong>Profilo professionale</strong><span>Specializzazione, anni di esperienza, volume di attività</span></div></div>
+    <div class="topic-row"><div class="topic-icon">🏥</div><div class="topic-text"><strong>Configurazione organizzativa</strong><span>Come lavori: da solo, in associazione, in struttura, su più sedi</span></div></div>
+    <div class="topic-row"><div class="topic-icon">⏱️</div><div class="topic-text"><strong>Distribuzione del tempo</strong><span>Dove vanno le tue ore — clinica vs amministrazione vs burocrazia</span></div></div>
+    <div class="topic-row"><div class="topic-icon">💻</div><div class="topic-text"><strong>Strumenti e impatto economico</strong><span>Cosa usi oggi, quanto ti costa il problema, chi decide gli acquisti</span></div></div>
+    <div class="topic-row"><div class="topic-icon">🤖</div><div class="topic-text"><strong>Propensione all'AI</strong><span>Interesse per l'automazione, esperienza con strumenti AI, willingness to pay</span></div></div>
+  </div>
+  <div class="info-reward">
+    <div class="reward-icon">🎁</div>
+    <div class="reward-text">
+      <h3>Il tuo profilo digitale personalizzato</h3>
+      <p>Al termine riceverai un <strong style="color:var(--white)">PDF gratuito con la tua buyer persona digitale</strong>, grafici personalizzati sul tuo profilo e insight concreti sul tuo potenziale di efficienza.</p>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(0)">← Indietro</button>
+    <button class="btn-primary" onclick="goTo(2)">Inizia il questionario →</button>
+  </div>
+</div>
+
+<!-- SLIDE 2: ANAGRAFICA -->
+<div class="slide" id="slide-2">
+  <div class="section-header">
+    <div class="section-num">Dati di contatto</div>
+    <h2 class="section-title">Chi sei</h2>
+    <p class="section-desc">Necessari per inviarti il tuo profilo PDF e tenerti aggiornato sul progetto. Tutti i campi sono obbligatori.</p>
+  </div>
+  <div class="ana-grid">
+    <div class="ana-field">
+      <label>Nome <span style="color:var(--error)">*</span></label>
+      <input type="text" id="ana-nome" placeholder="Mario">
+      <div class="field-error" id="err-ana-nome">Campo obbligatorio.</div>
+    </div>
+    <div class="ana-field">
+      <label>Cognome <span style="color:var(--error)">*</span></label>
+      <input type="text" id="ana-cognome" placeholder="Rossi">
+      <div class="field-error" id="err-ana-cognome">Campo obbligatorio.</div>
+    </div>
+    <div class="ana-field">
+      <label>Email <span style="color:var(--error)">*</span></label>
+      <input type="email" id="ana-email" placeholder="mario.rossi@email.it">
+      <div class="field-error" id="err-ana-email">Inserisci un'email valida.</div>
+    </div>
+    <div class="ana-field">
+      <label>Telefono <span style="color:var(--error)">*</span></label>
+      <input type="tel" id="ana-tel" placeholder="+39 333 0000000">
+      <div class="field-error" id="err-ana-tel">Campo obbligatorio.</div>
+    </div>
+    <div class="ana-field full">
+      <label>Regione di riferimento <span style="color:var(--error)">*</span></label>
+      <select id="ana-regione" style="width:100%;background:var(--white);border:1.5px solid #D4C9BA;border-radius:6px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--ink);outline:none;">
+        <option value="">— Seleziona regione —</option>
+        <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option><option>Campania</option>
+        <option>Emilia-Romagna</option><option>Friuli-Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+        <option>Lombardia</option><option>Marche</option><option>Molise</option><option>Piemonte</option>
+        <option>Puglia</option><option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
+        <option>Trentino-Alto Adige</option><option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
+      </select>
+      <div class="field-error" id="err-ana-regione">Seleziona la tua regione.</div>
+    </div>
+  </div>
+  <div class="validation-banner" id="val-2">⚠️ Compila tutti i campi obbligatori per continuare.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(1)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(2,3)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 3: PROFILO -->
+<div class="slide" id="slide-3">
+  <div class="section-header">
+    <div class="section-num">Sezione 1 di 6 — Profilo professionale</div>
+    <h2 class="section-title">La tua professione</h2>
+    <p class="section-desc">Tutte le domande con il badge rosso sono obbligatorie.</p>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D1.</span> Specializzazione principale <span class="required-badge">● obbligatoria</span></div>
+    <textarea class="text-input" id="q1" rows="2" placeholder="es. Cardiologo, Dermatologo, Ortopedico..."></textarea>
+    <div class="field-error" id="err-q1">Inserisci la tua specializzazione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D2.</span> Anni di libera professione <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q2">
+      <label class="opt"><input type="radio" name="q2" value="Meno di 2 anni"><div class="opt-marker"></div><span class="opt-text">Meno di 2 anni</span></label>
+      <label class="opt"><input type="radio" name="q2" value="2-5 anni"><div class="opt-marker"></div><span class="opt-text">2–5 anni</span></label>
+      <label class="opt"><input type="radio" name="q2" value="6-15 anni"><div class="opt-marker"></div><span class="opt-text">6–15 anni</span></label>
+      <label class="opt"><input type="radio" name="q2" value="Più di 15 anni"><div class="opt-marker"></div><span class="opt-text">Più di 15 anni</span></label>
+    </div>
+    <div class="field-error" id="err-q2">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D3.</span> Visite medie a settimana <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q3">
+      <label class="opt"><input type="radio" name="q3" value="Meno di 10"><div class="opt-marker"></div><span class="opt-text">Meno di 10</span></label>
+      <label class="opt"><input type="radio" name="q3" value="10-25"><div class="opt-marker"></div><span class="opt-text">10–25</span></label>
+      <label class="opt"><input type="radio" name="q3" value="26-40"><div class="opt-marker"></div><span class="opt-text">26–40</span></label>
+      <label class="opt"><input type="radio" name="q3" value="Più di 40"><div class="opt-marker"></div><span class="opt-text">Più di 40</span></label>
+    </div>
+    <div class="field-error" id="err-q3">Seleziona un'opzione.</div>
+  </div>
+  <div class="validation-banner" id="val-3">⚠️ Compila tutte le domande obbligatorie.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(2)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(3,4)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 4: ORGANIZZAZIONE -->
+<div class="slide" id="slide-4">
+  <div class="section-header">
+    <div class="section-num">Sezione 2 di 6 — Configurazione organizzativa</div>
+    <h2 class="section-title">Come sei organizzato</h2>
+    <p class="section-desc">Le domande si adatteranno alla tua risposta.</p>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D4.</span> Configurazione principale <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q4">
+      <label class="opt"><input type="radio" name="q4" value="Solo assoluto" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Solo assoluto — visito a domicilio o affitto ambulatorio a ore</span></label>
+      <label class="opt"><input type="radio" name="q4" value="Studio monoprofessionale" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Studio monoprofessionale — solo io, ambulatorio mio</span></label>
+      <label class="opt"><input type="radio" name="q4" value="Studio associato" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Studio associato — spazi e/o segreteria condivisi</span></label>
+      <label class="opt"><input type="radio" name="q4" value="Poliambulatorio privato" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Poliambulatorio privato — struttura multi-specialistica</span></label>
+      <label class="opt"><input type="radio" name="q4" value="Dipendente clinica + LP" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Dipendente clinica privata + attività libero-professionale</span></label>
+      <label class="opt"><input type="radio" name="q4" value="Multi-sede" onchange="switchCond('q4c',this.value)"><div class="opt-marker"></div><span class="opt-text">Multi-sede — visito in più strutture a rotazione</span></label>
+    </div>
+    <div class="field-error" id="err-q4">Seleziona la tua configurazione.</div>
+    <div id="q4c-Solo assoluto" class="conditional-box"><p style="font-size:.84rem;color:var(--muted)">📌 Senza struttura fissa gestisci tutto da solo — la configurazione con il carico amministrativo più elevato pro-capite.</p></div>
+    <div id="q4c-Studio monoprofessionale" class="conditional-box">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">📌 Hai personale di supporto?</p>
+      <div class="options">
+        <label class="opt checkbox"><input type="checkbox" name="q4b" value="Segretaria full-time"><div class="opt-marker"></div><span class="opt-text">Sì, segretaria full-time</span></label>
+        <label class="opt checkbox"><input type="checkbox" name="q4b" value="Segretaria part-time"><div class="opt-marker"></div><span class="opt-text">Sì, segretaria part-time</span></label>
+        <label class="opt checkbox"><input type="checkbox" name="q4b" value="Nessun supporto"><div class="opt-marker"></div><span class="opt-text">No, gestisco tutto da solo</span></label>
+      </div>
+    </div>
+    <div id="q4c-Studio associato" class="conditional-box">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">📌 Quanti medici nell'associazione?</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q4c" value="2 medici"><div class="opt-marker"></div><span class="opt-text">2 medici</span></label>
+        <label class="opt"><input type="radio" name="q4c" value="3-5 medici"><div class="opt-marker"></div><span class="opt-text">3–5 medici</span></label>
+        <label class="opt"><input type="radio" name="q4c" value="Più di 5 medici"><div class="opt-marker"></div><span class="opt-text">Più di 5 medici</span></label>
+      </div>
+    </div>
+    <div id="q4c-Poliambulatorio privato" class="conditional-box">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">📌 Ruolo nella struttura?</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q4d" value="Titolare/Direttore sanitario"><div class="opt-marker"></div><span class="opt-text">Titolare / Direttore sanitario</span></label>
+        <label class="opt"><input type="radio" name="q4d" value="Socio"><div class="opt-marker"></div><span class="opt-text">Socio</span></label>
+        <label class="opt"><input type="radio" name="q4d" value="Collaboratore"><div class="opt-marker"></div><span class="opt-text">Specialista collaboratore (non decido gli strumenti)</span></label>
+      </div>
+    </div>
+    <div id="q4c-Dipendente clinica + LP" class="conditional-box">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:8px">📌 Come gestisci la separazione tra le due attività?</p>
+      <textarea class="text-input" id="q4e_text" rows="2" placeholder="es. agenda separata, sistemi diversi..."></textarea>
+    </div>
+    <div id="q4c-Multi-sede" class="conditional-box">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">📌 In quante strutture visiti?</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q4f" value="2 strutture"><div class="opt-marker"></div><span class="opt-text">2 strutture</span></label>
+        <label class="opt"><input type="radio" name="q4f" value="3-4 strutture"><div class="opt-marker"></div><span class="opt-text">3–4 strutture</span></label>
+        <label class="opt"><input type="radio" name="q4f" value="5+ strutture"><div class="opt-marker"></div><span class="opt-text">5 o più strutture</span></label>
+      </div>
+    </div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D5.</span> Attività in telemedicina <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q5">
+      <label class="opt"><input type="radio" name="q5" value="Sì, parte rilevante"><div class="opt-marker"></div><span class="opt-text">Sì, è una parte rilevante della mia attività</span></label>
+      <label class="opt"><input type="radio" name="q5" value="Sì, occasionalmente"><div class="opt-marker"></div><span class="opt-text">Sì, ma occasionalmente</span></label>
+      <label class="opt"><input type="radio" name="q5" value="No, solo in presenza"><div class="opt-marker"></div><span class="opt-text">No, solo in presenza</span></label>
+      <label class="opt"><input type="radio" name="q5" value="No ma mi interesserebbe"><div class="opt-marker"></div><span class="opt-text">No, ma mi interesserebbe</span></label>
+    </div>
+    <div class="field-error" id="err-q5">Seleziona un'opzione.</div>
+  </div>
+  <div class="validation-banner" id="val-4">⚠️ Compila tutte le domande obbligatorie.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(3)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(4,5)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 5: TEMPO -->
+<div class="slide" id="slide-5">
+  <div class="section-header">
+    <div class="section-num">Sezione 3 di 6 — Distribuzione del tempo</div>
+    <h2 class="section-title">Il tuo tempo</h2>
+    <p class="section-desc">Sezione più importante — sii preciso.</p>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D6.</span> Ore/giorno per attività <span class="required-badge">● obbligatoria</span></div>
+    <p class="q-hint">Usa 0.5 per mezz'ora. Almeno un valore obbligatorio.</p>
+    <div class="hours-grid">
+      <div class="hour-row"><span>Visite / prestazioni cliniche</span><input type="number" class="hour-input" id="q6a" min="0" max="16" step="0.5" placeholder="0"></div>
+      <div class="hour-row"><span>Documentazione e cartelle cliniche</span><input type="number" class="hour-input" id="q6b" min="0" max="16" step="0.5" placeholder="0"></div>
+      <div class="hour-row"><span>Burocrazia (ricette, referti, fatture)</span><input type="number" class="hour-input" id="q6c" min="0" max="16" step="0.5" placeholder="0"></div>
+      <div class="hour-row"><span>Gestione appuntamenti e agenda</span><input type="number" class="hour-input" id="q6d" min="0" max="16" step="0.5" placeholder="0"></div>
+      <div class="hour-row"><span>Comunicazione pazienti (tel, email, WA)</span><input type="number" class="hour-input" id="q6e" min="0" max="16" step="0.5" placeholder="0"></div>
+      <div class="hour-row"><span>Aggiornamento professionale / ECM</span><input type="number" class="hour-input" id="q6f" min="0" max="16" step="0.5" placeholder="0"></div>
+    </div>
+    <div class="field-error" id="err-q6">Inserisci almeno un valore di ore.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D7.</span> Attività più frustrante <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q7">
+      <label class="opt"><input type="radio" name="q7" value="Documentazione clinica"><div class="opt-marker"></div><span class="opt-text">Documentazione clinica e cartelle</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Burocrazia amministrativa"><div class="opt-marker"></div><span class="opt-text">Burocrazia amministrativa</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Gestione agenda"><div class="opt-marker"></div><span class="opt-text">Gestione agenda e appuntamenti</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Comunicazione fuori orario"><div class="opt-marker"></div><span class="opt-text">Rispondere ai pazienti fuori orario</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Aggiornamento ECM"><div class="opt-marker"></div><span class="opt-text">Tenermi aggiornato (ECM, letteratura)</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Marketing e acquisizione pazienti"><div class="opt-marker"></div><span class="opt-text">Trovare nuovi pazienti / marketing</span></label>
+      <label class="opt"><input type="radio" name="q7" value="Coordinamento colleghi"><div class="opt-marker"></div><span class="opt-text">Coordinamento con colleghi o strutture</span></label>
+    </div>
+    <div class="field-error" id="err-q7">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D8.</span> Ore/settimana delegabili <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q8">
+      <label class="opt"><input type="radio" name="q8" value="Meno di 2 ore"><div class="opt-marker"></div><span class="opt-text">Meno di 2 ore — sono già efficiente</span></label>
+      <label class="opt"><input type="radio" name="q8" value="2-5 ore"><div class="opt-marker"></div><span class="opt-text">2–5 ore — c'è margine</span></label>
+      <label class="opt"><input type="radio" name="q8" value="5-10 ore"><div class="opt-marker"></div><span class="opt-text">5–10 ore — problema reale</span></label>
+      <label class="opt"><input type="radio" name="q8" value="Più di 10 ore"><div class="opt-marker"></div><span class="opt-text">Più di 10 ore — problema principale</span></label>
+    </div>
+    <div class="field-error" id="err-q8">Seleziona un'opzione.</div>
+  </div>
+  <div class="validation-banner" id="val-5">⚠️ Compila tutte le domande obbligatorie.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(4)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(5,6)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 6: STRUMENTI -->
+<div class="slide" id="slide-6">
+  <div class="section-header">
+    <div class="section-num">Sezione 4 di 6 — Strumenti & impatto economico</div>
+    <h2 class="section-title">Strumenti e costi</h2>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D9.</span> Strumenti digitali usati <span style="font-weight:400;font-size:.83rem;color:var(--muted)">(seleziona tutti)</span> <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q9">
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="Gestionale cartelle cliniche"><div class="opt-marker"></div><span class="opt-text">Gestionale / cartelle cliniche digitali</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="Doctolib o simili"><div class="opt-marker"></div><span class="opt-text">Doctolib o piattaforme prenotazione online</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="Software fatturazione"><div class="opt-marker"></div><span class="opt-text">Software di fatturazione elettronica</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="WhatsApp Business"><div class="opt-marker"></div><span class="opt-text">WhatsApp Business con i pazienti</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="ChatGPT/Claude generico"><div class="opt-marker"></div><span class="opt-text">ChatGPT, Claude o altri AI generici</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="Sito web/piattaforme mediche"><div class="opt-marker"></div><span class="opt-text">Sito web o piattaforme mediche online</span></label>
+      <label class="opt checkbox"><input type="checkbox" name="q9" value="Nessuno strumento digitale"><div class="opt-marker"></div><span class="opt-text">Nessuno — gestisco tutto a mano</span></label>
+    </div>
+    <div class="field-error" id="err-q9">Seleziona almeno un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D10.</span> Soddisfazione strumenti attuali <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q10">
+      <label class="opt"><input type="radio" name="q10" value="Molto soddisfatto"><div class="opt-marker"></div><span class="opt-text">Molto soddisfatto — non cambierei nulla</span></label>
+      <label class="opt"><input type="radio" name="q10" value="Abbastanza soddisfatto"><div class="opt-marker"></div><span class="opt-text">Abbastanza soddisfatto — ma ci sono lacune</span></label>
+      <label class="opt"><input type="radio" name="q10" value="Poco soddisfatto"><div class="opt-marker"></div><span class="opt-text">Poco soddisfatto — mi adatto ma non è ideale</span></label>
+      <label class="opt"><input type="radio" name="q10" value="Per niente soddisfatto"><div class="opt-marker"></div><span class="opt-text">Per niente soddisfatto — problema ogni giorno</span></label>
+    </div>
+    <div class="field-error" id="err-q10">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D11.</span> Chi decide gli acquisti digitali <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q11">
+      <label class="opt"><input type="radio" name="q11" value="Io autonomamente"><div class="opt-marker"></div><span class="opt-text">Io stesso, autonomamente</span></label>
+      <label class="opt"><input type="radio" name="q11" value="Io con colleghi"><div class="opt-marker"></div><span class="opt-text">Io, dopo confronto con i colleghi</span></label>
+      <label class="opt"><input type="radio" name="q11" value="La direzione"><div class="opt-marker"></div><span class="opt-text">La direzione della struttura (non decido io)</span></label>
+      <label class="opt"><input type="radio" name="q11" value="Non ho mai acquistato"><div class="opt-marker"></div><span class="opt-text">Non ho mai acquistato strumenti digitali</span></label>
+    </div>
+    <div class="field-error" id="err-q11">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D12.</span> No-show mensili <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q12">
+      <label class="opt"><input type="radio" name="q12" value="0-2"><div class="opt-marker"></div><span class="opt-text">0–2 — marginale</span></label>
+      <label class="opt"><input type="radio" name="q12" value="3-5"><div class="opt-marker"></div><span class="opt-text">3–5 — fastidioso ma gestibile</span></label>
+      <label class="opt"><input type="radio" name="q12" value="6-10"><div class="opt-marker"></div><span class="opt-text">6–10 — problema reale</span></label>
+      <label class="opt"><input type="radio" name="q12" value="Più di 10"><div class="opt-marker"></div><span class="opt-text">Più di 10 — costo significativo</span></label>
+    </div>
+    <div class="field-error" id="err-q12">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D13.</span> Spesa mensile strumenti digitali <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q13">
+      <label class="opt"><input type="radio" name="q13" value="Nulla"><div class="opt-marker"></div><span class="opt-text">Nulla</span></label>
+      <label class="opt"><input type="radio" name="q13" value="Meno di €50"><div class="opt-marker"></div><span class="opt-text">Meno di €50/mese</span></label>
+      <label class="opt"><input type="radio" name="q13" value="€50-150"><div class="opt-marker"></div><span class="opt-text">€50–150/mese</span></label>
+      <label class="opt"><input type="radio" name="q13" value="€150-400"><div class="opt-marker"></div><span class="opt-text">€150–400/mese</span></label>
+      <label class="opt"><input type="radio" name="q13" value="Più di €400"><div class="opt-marker"></div><span class="opt-text">Più di €400/mese</span></label>
+    </div>
+    <div class="field-error" id="err-q13">Seleziona un'opzione.</div>
+  </div>
+  <div class="validation-banner" id="val-6">⚠️ Compila tutte le domande obbligatorie.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(5)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(6,7)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 7: AI -->
+<div class="slide" id="slide-7">
+  <div class="section-header">
+    <div class="section-num">Sezione 5 di 6 — Propensione all'AI</div>
+    <h2 class="section-title">Tu e l'intelligenza artificiale</h2>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D14.</span> Interesse AI per area <span class="required-badge">● obbligatoria</span></div>
+    <p class="q-hint">1 = Per niente, 5 = Fondamentale. Valuta almeno 4 aree.</p>
+    <div class="scale-wrap">
+      <table class="scale-table">
+        <thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+        <tbody id="scale-body"></tbody>
+      </table>
+    </div>
+    <div class="field-error" id="err-q14">Valuta almeno 4 aree per continuare.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D15.</span> Esperienza con strumenti AI <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q15">
+      <label class="opt"><input type="radio" name="q15" value="Uso regolarmente"><div class="opt-marker"></div><span class="opt-text">Sì, lo uso regolarmente — mi aiuta molto</span></label>
+      <label class="opt"><input type="radio" name="q15" value="Provato non utile"><div class="opt-marker"></div><span class="opt-text">Sì, l'ho provato ma non mi è sembrato utile</span></label>
+      <label class="opt"><input type="radio" name="q15" value="Sentito mai usato"><div class="opt-marker"></div><span class="opt-text">L'ho sentito nominare ma non l'ho mai usato</span></label>
+      <label class="opt"><input type="radio" name="q15" value="Non mi interessa"><div class="opt-marker"></div><span class="opt-text">Non lo conosco / non mi interessa</span></label>
+    </div>
+    <div class="field-error" id="err-q15">Seleziona un'opzione.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D16.</span> Willingness to pay <span class="required-badge">● obbligatoria</span></div>
+    <div class="options" id="q16">
+      <label class="opt"><input type="radio" name="q16" value="Nulla"><div class="opt-marker"></div><span class="opt-text">Nulla — solo strumenti gratuiti</span></label>
+      <label class="opt"><input type="radio" name="q16" value="Fino a €30/mese"><div class="opt-marker"></div><span class="opt-text">Fino a €30/mese se risolve un problema reale</span></label>
+      <label class="opt"><input type="radio" name="q16" value="€30-80/mese"><div class="opt-marker"></div><span class="opt-text">€30–80/mese per soluzione completa</span></label>
+      <label class="opt"><input type="radio" name="q16" value="€80-150/mese"><div class="opt-marker"></div><span class="opt-text">€80–150/mese se mi fa risparmiare tempo</span></label>
+      <label class="opt"><input type="radio" name="q16" value="Più di €150/mese"><div class="opt-marker"></div><span class="opt-text">Più di €150/mese se il ROI è dimostrabile</span></label>
+    </div>
+    <div class="field-error" id="err-q16">Seleziona un'opzione.</div>
+  </div>
+  <div class="validation-banner" id="val-7">⚠️ Compila tutte le domande obbligatorie.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(6)">← Indietro</button>
+    <button class="btn-primary" onclick="validateAndGo(7,8)">Continua →</button>
+  </div>
+</div>
+
+<!-- SLIDE 8: FINALE -->
+<div class="slide" id="slide-8">
+  <div class="section-header">
+    <div class="section-num">Sezione 6 di 6 — Voce libera</div>
+    <h2 class="section-title">L'ultima domanda</h2>
+    <p class="section-desc">La più importante di tutte.</p>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D17.</span> Se potessi cambiare <em>una sola cosa</em> nella tua vita professionale quotidiana, cosa sarebbe? <span class="required-badge">● obbligatoria</span></div>
+    <textarea class="text-input" id="q17" rows="5" placeholder="Scrivi liberamente, senza filtri..."></textarea>
+    <div class="field-error" id="err-q17">Scrivi almeno qualche parola.</div>
+  </div>
+  <div class="question-block">
+    <div class="q-label"><span class="q-num">D18.</span> Disponibile per una call di 20 minuti? <span style="font-weight:400;font-size:.83rem;color:var(--muted)">(facoltativo)</span></div>
+    <div class="options" id="q18">
+      <label class="opt"><input type="radio" name="q18" value="Disponibile" onchange="document.getElementById('cbox').classList.add('visible');document.getElementById('ebox').classList.remove('visible')"><div class="opt-marker"></div><span class="opt-text">Sì — accesso gratuito alla beta in cambio</span></label>
+      <label class="opt"><input type="radio" name="q18" value="Anonimo aggiornamenti" onchange="document.getElementById('ebox').classList.add('visible');document.getElementById('cbox').classList.remove('visible')"><div class="opt-marker"></div><span class="opt-text">Preferisco restare anonimo ma voglio aggiornamenti</span></label>
+      <label class="opt"><input type="radio" name="q18" value="No grazie" onchange="document.getElementById('cbox').classList.remove('visible');document.getElementById('ebox').classList.remove('visible')"><div class="opt-marker"></div><span class="opt-text">No grazie</span></label>
+    </div>
+    <div class="conditional-box" id="cbox">
+      <input type="text" class="text-input" id="c-name" placeholder="Nome (opzionale)" style="margin-bottom:9px;resize:none;height:42px;padding:10px 13px;">
+      <input type="text" class="text-input" id="c-contact" placeholder="Email o telefono">
+    </div>
+    <div class="conditional-box" id="ebox">
+      <input type="email" class="text-input" id="e-email" placeholder="La tua email" style="resize:none;height:42px;padding:10px 13px;">
+    </div>
+  </div>
+  <div class="validation-banner" id="val-8">⚠️ Compila le domande obbligatorie prima di inviare.</div>
+  <div class="btn-row">
+    <button class="btn-back" onclick="goTo(7)">← Indietro</button>
+    <button class="btn-primary" id="submit-btn" onclick="submitForm()">Scopri il tuo profilo →</button>
+  </div>
+</div>
+
+<!-- SLIDE 9: PERSONA -->
+<div class="slide" id="slide-9">
+  <div class="persona-wrap">
+    <div class="persona-card">
+      <div class="persona-emoji" id="p-emoji"></div>
+      <div class="persona-tag" id="p-tag"></div>
+      <div class="persona-name" id="p-name"></div>
+      <div class="persona-desc" id="p-desc"></div>
+      <div class="score-bar-wrap">
+        <div class="score-label"><span>Propensione digitale</span><span id="p-score-lbl"></span></div>
+        <div class="score-bar-bg"><div class="score-bar-fill" id="p-bar" style="width:0%"></div></div>
+      </div>
+      <div class="persona-traits" id="p-traits"></div>
+    </div>
+    <div class="insight-grid" id="p-insights"></div>
+    <button class="pdf-btn" onclick="generatePDF()">⬇ Scarica il tuo profilo PDF</button>
+    <p class="thanks-note">Grazie per il tuo contributo, Dottore.<br>Le tue risposte ci aiutano a costruire qualcosa di davvero utile per la categoria.</p>
+  </div>
+</div>
+
+</main>
+
+<div class="sending-overlay" id="sending-overlay">
+  <div class="sending-box">
+    <div class="spinner"></div>
+    <p style="font-family:'DM Serif Display',serif;font-size:1.15rem">Elaborazione in corso...</p>
+  </div>
+</div>
+
+<script>
+// ══ FORMSPREE ════════════════════════════════════════════════
+// 1. Vai su formspree.io → crea account gratuito
+// 2. New Form → copia l'endpoint (es. https://formspree.io/f/xyzabcde)
+// 3. Sostituisci la stringa qui sotto
+// ══ GOOGLE APPS SCRIPT WEBHOOK ══════════════════════════════
+// Sostituisci con il tuo URL dopo aver pubblicato lo script
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzJq-m92HbTldtPjUFwPkbHM7oEwFRbObqegx4vZa9I6EMYePpnw8KqxsIe4mrffCpISw/exec";
+
+// ══ SCALE ITEMS ══════════════════════════════════════════════
+const scaleItems = [
+  "Generare referti e documentazione in automatico",
+  "Supporto diagnosi differenziale e drug interactions",
+  "Gestione automatica agenda e promemoria pazienti",
+  "Marketing digitale e acquisizione nuovi pazienti",
+  "Aggiornamento ECM e formazione continua",
+  "Report e analytics performance studio",
+  "Fatturazione e burocrazia amministrativa",
+  "Comunicazione post-visita con i pazienti"
+];
+(function(){
+  const tb = document.getElementById('scale-body');
+  scaleItems.forEach((item,i)=>{
+    const tr = document.createElement('tr');
+    let cells = `<td>${item}</td>`;
+    for(let v=1;v<=5;v++) cells += `<td><input type="radio" class="scale-radio" name="scale${i}" value="${v}"></td>`;
+    tr.innerHTML = cells; tb.appendChild(tr);
+  });
+})();
+
+// ══ NAVIGATION ════════════════════════════════════════════════
+let cur = 0;
+function goTo(n){
+  document.getElementById(`slide-${cur}`).classList.remove('active');
+  cur = n;
+  document.getElementById(`slide-${cur}`).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateUI();
+}
+function updateUI(){
+  const pct = cur===0?1:Math.round((cur/9)*100);
+  document.getElementById('progress-bar').style.width=pct+'%';
+  const labels=['','Info','Contatti','Profilo','Organizzazione','Tempo','Strumenti','AI','Finale',''];
+  document.getElementById('step-label').textContent =
+    cur<=1?'Ricerca sul campo':cur===9?'Il tuo profilo':`Sezione ${cur-2} / 6 — ${labels[cur]}`;
+}
+
+// ══ OPTION SELECTION ══════════════════════════════════════════
+document.addEventListener('change',function(e){
+  if(e.target.type==='radio'&&e.target.closest('.opt')){
+    document.querySelectorAll(`input[name="${e.target.name}"]`).forEach(i=>i.closest('.opt')?.classList.remove('selected'));
+    e.target.closest('.opt').classList.add('selected');
+  }
+  if(e.target.type==='checkbox') e.target.closest('.opt')?.classList.toggle('selected',e.target.checked);
+});
+
+// ══ CONDITIONALS ══════════════════════════════════════════════
+function switchCond(prefix,value){
+  document.querySelectorAll(`[id^="${prefix}-"]`).forEach(el=>el.classList.remove('visible'));
+  document.getElementById(`${prefix}-${value}`)?.classList.add('visible');
+}
+
+// ══ HELPERS ═══════════════════════════════════════════════════
+const $  = id => document.getElementById(id);
+const tv = id => ($( id)?.value||'').trim();
+const rv = name => { const e=document.querySelector(`input[name="${name}"]:checked`); return e?e.value:null; };
+const cbAny = name => document.querySelectorAll(`input[name="${name}"]:checked`).length>0;
+const cbAll = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(e=>e.value).join(', ')||'—';
+const fh  = n => parseFloat($(`q6${n}`)?.value)||0;
+const showE = (id,show) => { const e=$(id); if(!e)return; e.style.display=show?'block':'none'; e.classList.toggle('visible',show); };
+const scaleVal = i => rv(`scale${i}`);
+const scaleCount = () => scaleItems.reduce((c,_,i)=>c+(scaleVal(i)?1:0),0);
+
+// ══ VALIDATION ════════════════════════════════════════════════
+const validations = {
+  2: ()=>{
+    let ok=true;
+    if(!tv('ana-nome')){showE('err-ana-nome',true);ok=false;}else showE('err-ana-nome',false);
+    if(!tv('ana-cognome')){showE('err-ana-cognome',true);ok=false;}else showE('err-ana-cognome',false);
+    const email=tv('ana-email'); const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if(!emailOk){showE('err-ana-email',true);ok=false;}else showE('err-ana-email',false);
+    if(!tv('ana-tel')){showE('err-ana-tel',true);ok=false;}else showE('err-ana-tel',false);
+    if(!$('ana-regione').value){showE('err-ana-regione',true);ok=false;}else showE('err-ana-regione',false);
+    return ok;
+  },
+  3: ()=>{
+    let ok=true;
+    if(!tv('q1')){showE('err-q1',true);ok=false;}else showE('err-q1',false);
+    if(!rv('q2')){showE('err-q2',true);ok=false;}else showE('err-q2',false);
+    if(!rv('q3')){showE('err-q3',true);ok=false;}else showE('err-q3',false);
+    return ok;
+  },
+  4: ()=>{
+    let ok=true;
+    if(!rv('q4')){showE('err-q4',true);ok=false;}else showE('err-q4',false);
+    if(!rv('q5')){showE('err-q5',true);ok=false;}else showE('err-q5',false);
+    return ok;
+  },
+  5: ()=>{
+    let ok=true;
+    const hasH=['a','b','c','d','e','f'].some(x=>fh(x)>0);
+    if(!hasH){showE('err-q6',true);ok=false;}else showE('err-q6',false);
+    if(!rv('q7')){showE('err-q7',true);ok=false;}else showE('err-q7',false);
+    if(!rv('q8')){showE('err-q8',true);ok=false;}else showE('err-q8',false);
+    return ok;
+  },
+  6: ()=>{
+    let ok=true;
+    if(!cbAny('q9')){showE('err-q9',true);ok=false;}else showE('err-q9',false);
+    if(!rv('q10')){showE('err-q10',true);ok=false;}else showE('err-q10',false);
+    if(!rv('q11')){showE('err-q11',true);ok=false;}else showE('err-q11',false);
+    if(!rv('q12')){showE('err-q12',true);ok=false;}else showE('err-q12',false);
+    if(!rv('q13')){showE('err-q13',true);ok=false;}else showE('err-q13',false);
+    return ok;
+  },
+  7: ()=>{
+    let ok=true;
+    if(scaleCount()<4){showE('err-q14',true);ok=false;}else showE('err-q14',false);
+    if(!rv('q15')){showE('err-q15',true);ok=false;}else showE('err-q15',false);
+    if(!rv('q16')){showE('err-q16',true);ok=false;}else showE('err-q16',false);
+    return ok;
+  },
+  8: ()=>{
+    let ok=true;
+    if(tv('q17').length<10){showE('err-q17',true);ok=false;}else showE('err-q17',false);
+    return ok;
+  }
+};
+
+function validateAndGo(from,to){
+  const fn=validations[from];
+  if(fn&&!fn()){
+    $(`val-${from}`)?.classList.add('visible');
+    document.querySelector(`#slide-${from} .field-error.visible`)?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  $(`val-${from}`)?.classList.remove('visible');
+  goTo(to);
+}
+
+// ══ PERSONAS ══════════════════════════════════════════════════
+const personas = [
+  { id:'tradizionalista', emoji:'📜', tag:'Archetipo — Tradizionalista', name:'Il Guardiano della Tradizione',
+    desc:'Hai costruito la tua professione sulla competenza clinica e sulla fiducia dei pazienti. Il digitale lo vedi come uno strumento, non come una priorità. Non è resistenza: è pragmatismo. Cambi quando sei convinto che valga davvero.',
+    min:0, max:25, traits:['Approccio clinico first','Cautela verso il nuovo','Alta fidelizzazione pazienti','Decisore autonomo'],
+    implication:'Hai bisogno di una soluzione che si integri nel tuo flusso attuale senza stravolgere nulla. Il punto d\'ingresso ideale: automatizzare una singola attività ad alto impatto come i promemoria ai pazienti, misurare il risultato concreto, poi espandere.' },
+  { id:'sommerso', emoji:'⏳', tag:'Archetipo — Sovraccarico', name:'Il Sommerso',
+    desc:'Sai perfettamente cosa non funziona. Il problema non è la volontà di cambiare, è il tempo. Sei sempre in modalità emergenza. Hai bisogno di qualcuno che risolva il problema senza crearti altri problemi.',
+    min:26, max:45, traits:['Alta consapevolezza del problema','Poco tempo per soluzioni','Motivato dal risparmio di tempo','Cerca semplicità operativa'],
+    implication:'Il tuo profilo suggerisce che la priorità è recuperare tempo senza aggiungere complessità. Una piattaforma che funziona in background, senza ore di setup, può liberare 8-12 ore a settimana nel tuo caso specifico.' },
+  { id:'curioso', emoji:'🔭', tag:'Archetipo — Esploratore', name:'Il Curioso Digitale',
+    desc:'Hai iniziato a guardarti intorno. Hai sentito parlare di AI, forse hai anche provato qualcosa. Non sei ancora convinto al 100%, ma sei aperto. Hai bisogno di una prova concreta che funzioni nel tuo contesto specifico.',
+    min:46, max:62, traits:['Apertura all\'innovazione','Scetticismo sano','Cerca prove concrete','Valuta il ROI prima di investire'],
+    implication:'Sei nel punto giusto del percorso: abbastanza aperto da sperimentare, abbastanza razionale da non buttarti senza evidenze. Hai bisogno di un trial gratuito con dati reali e un case study del tuo stesso settore specialty.' },
+  { id:'pioniere', emoji:'🚀', tag:'Archetipo — Early Adopter', name:'Il Pioniere',
+    desc:'Hai già integrato strumenti digitali nel tuo lavoro e vedi dove l\'AI può fare la differenza. Sei frustrato perché le soluzioni esistenti non sono pensate per i medici italiani. Vuoi qualcosa di potente, verticale, fatto bene.',
+    min:63, max:78, traits:['Già usa strumenti AI','Alta aspettativa qualitativa','Influencer della categoria','Disposto a pagare per valore'],
+    implication:'Hai dimostrato di saper adottare strumenti digitali con successo. Sei pronto per una piattaforma verticale che integri AI clinica + gestione studio + analytics. Il tuo feedback è prezioso per costruirla bene.' },
+  { id:'visionario', emoji:'🌟', tag:'Archetipo — Trasformatore', name:'Il Visionario',
+    desc:'Non stai cercando uno strumento. Stai cercando un cambio di paradigma. Vuoi trasformare completamente il modo in cui gestisci lo studio — automatizzare tutto l\'automatizzabile, liberare il massimo tempo per la clinica.',
+    min:79, max:100, traits:['Visione trasformativa','Leadership digitale','Massima propensione all\'AI','Potenziale ambassador'],
+    implication:'Non stai cercando un tool: stai cercando un partner tecnologico. Il tuo studio potrebbe diventare un modello per la categoria. Sei esattamente il profilo che aspettavamo.' }
+];
+
+function calcScore(){
+  let s=0;
+  const adminH = fh('b')+fh('c')+fh('d')+fh('e');
+  s += Math.min(20, adminH*3);
+  s += ({' Meno di 2 ore':0,'2-5 ore':5,'5-10 ore':10,'Più di 10 ore':15}[rv('q8')]||0);
+  s += ({'Molto soddisfatto':0,'Abbastanza soddisfatto':5,'Poco soddisfatto':10,'Per niente soddisfatto':15}[rv('q10')]||0);
+  s += ({'Uso regolarmente':20,'Provato non utile':10,'Sentito mai usato':5,'Non mi interessa':0}[rv('q15')]||0);
+  s += ({'Nulla':0,'Fino a €30/mese':5,'€30-80/mese':10,'€80-150/mese':15,'Più di €150/mese':20}[rv('q16')]||0);
+  let ss=0,sn=0;
+  scaleItems.forEach((_,i)=>{const v=parseInt(scaleVal(i)||0);if(v>0){ss+=v;sn++;}});
+  if(sn>0) s+=Math.round((ss/sn/5)*10);
+  return Math.min(100,Math.round(s));
+}
+function getPersona(score){ return personas.find(p=>score>=p.min&&score<=p.max)||personas[2]; }
+
+// ══ SUBMIT ════════════════════════════════════════════════════
+async function submitForm(){
+  if(!validations[8]()){$('val-8').classList.add('visible');return;}
+  $('val-8').classList.remove('visible');
+  $('submit-btn').disabled=true;
+  $('sending-overlay').classList.add('active');
+
+  const score=calcScore();
+  const p=getPersona(score);
+  const scaleRes=scaleItems.map((item,i)=>`${item}: ${scaleVal(i)||'—'}/5`).join('\n');
+
+  const payload={
+    _subject:`MedHub AI — ${p.name} | Score ${score}/100 | ${new Date().toLocaleDateString('it-IT')}`,
+    /* ANAGRAFICA */
+    nome: tv('ana-nome'),
+    cognome: tv('ana-cognome'),
+    email: tv('ana-email'),
+    telefono: tv('ana-tel'),
+    regione: $('ana-regione').value,
+    /* PROFILO */
+    specializzazione: tv('q1'),
+    anni_LP: rv('q2')||'—',
+    visite_sett: rv('q3')||'—',
+    /* ORGANIZZAZIONE */
+    configurazione: rv('q4')||'—',
+    telemedicina: rv('q5')||'—',
+    /* TEMPO */
+    ore_visite: $('q6a')?.value||'0',
+    ore_documentazione: $('q6b')?.value||'0',
+    ore_burocrazia: $('q6c')?.value||'0',
+    ore_agenda: $('q6d')?.value||'0',
+    ore_comunicazione: $('q6e')?.value||'0',
+    ore_ECM: $('q6f')?.value||'0',
+    attivita_frustrante: rv('q7')||'—',
+    ore_delegabili: rv('q8')||'—',
+    /* STRUMENTI */
+    strumenti_usati: cbAll('q9'),
+    soddisfazione: rv('q10')||'—',
+    decision_maker: rv('q11')||'—',
+    no_show: rv('q12')||'—',
+    spesa_mensile: rv('q13')||'—',
+    /* AI */
+    scala_AI: scaleRes,
+    uso_AI: rv('q15')||'—',
+    willingness_to_pay: rv('q16')||'—',
+    /* FINALE */
+    cosa_cambiare: tv('q17'),
+    disponibilita_call: rv('q18')||'—',
+    contatto_aggiuntivo: tv('c-contact')||tv('e-email')||'—',
+    /* PERSONA */
+    persona: p.name,
+    score_digitale: `${score}/100`
+  };
+
+  try{
+    // Google Apps Script richiede mode:no-cors e Content-Type:text/plain
+    await fetch(GAS_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    // Con no-cors non possiamo leggere la risposta, ma l'invio avviene correttamente
+  } catch(e) {
+    console.warn('GAS error:', e);
+    // Fallback mailto se qualcosa va storto
+    const sub = encodeURIComponent(payload._subject);
+    const bod = encodeURIComponent(Object.entries(payload).map(([k,v])=>k+': '+v).join('\n'));
+    window.location.href = 'mailto:danielecarnemolla895@gmail.com?subject='+sub+'&body='+bod;
+  }
+
+  $('sending-overlay').classList.remove('active');
+  showPersona(p,score);
+  goTo(9);
+  setTimeout(()=>{ $('p-bar').style.width=score+'%'; },300);
+}
+
+function showPersona(p,score){
+  $('p-emoji').textContent=p.emoji;
+  $('p-tag').textContent=p.tag;
+  $('p-name').textContent=p.name;
+  $('p-desc').textContent=p.desc;
+  $('p-score-lbl').textContent=`${score}/100`;
+  $('p-traits').innerHTML=p.traits.map(t=>`<span class="trait-pill">${t}</span>`).join('');
+  const adminH=(fh('b')+fh('c')+fh('d')+fh('e')).toFixed(1);
+  const clinH=fh('a'); const tot=parseFloat(adminH)+clinH;
+  const pct=tot>0?Math.round((parseFloat(adminH)/tot)*100)+'%':'—';
+  $('p-insights').innerHTML=`
+    <div class="insight-card"><div class="insight-card-label">Ore admin/giorno</div><div class="insight-card-val">${adminH} ore</div></div>
+    <div class="insight-card"><div class="insight-card-label">Tempo non clinico</div><div class="insight-card-val">${pct}</div></div>
+    <div class="insight-card"><div class="insight-card-label">Willingness to pay</div><div class="insight-card-val">${rv('q16')||'—'}</div></div>
+    <div class="insight-card"><div class="insight-card-label">No-show mensili</div><div class="insight-card-val">${rv('q12')||'—'}</div></div>
+  `;
+}
+
+// ══ PDF ═══════════════════════════════════════════════════════
+function generatePDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF){
+    alert('Libreria PDF non caricata. Controlla la connessione internet e ricarica la pagina.');
+    return;
+  }
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=210,H=297,ML=20,MR=20,CT=W/2;
+    const score=calcScore();
+    const p=getPersona(score);
+
+    // PALETTE
+    const BLU_SCURO=[26,58,108];
+    const BLU=[41,98,174];
+    const BLU_CHIARO=[219,234,254];
+    const BLU_PALL=[239,246,255];
+    const GRIGIO=[100,116,139];
+    const GRIGIO_CH=[241,245,249];
+    const NERO=[30,30,30];
+    const BIANCO=[255,255,255];
+    const VERDE=[22,163,74];
+    const ARANCIO=[234,88,12];
+
+    // colore per score
+    const scoreColor = score>=79?VERDE : score>=63?BLU : score>=46?[37,99,235] : score>=26?ARANCIO:[156,163,175];
+
+    // ── helper functions
+    const setF=(r,g,b)=>doc.setFillColor(r,g,b);
+    const setT=(r,g,b)=>doc.setTextColor(r,g,b);
+    const setD=(r,g,b)=>doc.setDrawColor(r,g,b);
+    const bold=(sz)=>{ doc.setFont('helvetica','bold'); doc.setFontSize(sz); };
+    const norm=(sz)=>{ doc.setFont('helvetica','normal'); doc.setFontSize(sz); };
+    const txt=(text,x,y,opts)=>doc.text(String(text),x,y,opts||{});
+
+    function sectionTitle(label,y){
+      setT(...BLU); bold(7.5);
+      txt(label.toUpperCase(),ML,y);
+      setD(...BLU_CHIARO); doc.setLineWidth(0.3);
+      doc.line(ML,y+1.5,W-MR,y+1.5);
+      setT(...NERO);
+      return y+6;
+    }
+
+    function kpiBox(x,y,w,h,label,value,color){
+      setF(...GRIGIO_CH); doc.roundedRect(x,y,w,h,2,2,'F');
+      setD(...BLU_CHIARO); doc.setLineWidth(0.4);
+      doc.roundedRect(x,y,w,h,2,2,'S');
+      // left accent bar
+      setF(...(color||BLU)); doc.rect(x,y,1.5,h,'F');
+      norm(6.5); setT(...GRIGIO);
+      txt(label,x+4,y+5);
+      bold(9); setT(...NERO);
+      const vlines=doc.splitTextToSize(String(value),w-6);
+      txt(vlines[0]||'—',x+4,y+11);
+    }
+
+    function hBar(label,value,maxVal,x,y,barAreaW,color){
+      // label
+      norm(8); setT(...NERO);
+      const lw=52;
+      const labelLines=doc.splitTextToSize(label,lw);
+      txt(labelLines[0],x,y+4);
+      // background bar
+      const bx=x+lw+2; const bh=5;
+      const bw=barAreaW-lw-14;
+      setF(226,232,240); doc.roundedRect(bx,y,bw,bh,1,1,'F');
+      // filled bar
+      const fill=maxVal>0?Math.max(3,(value/maxVal)*bw):0;
+      if(fill>0){ setF(...color); doc.roundedRect(bx,y,fill,bh,1,1,'F'); }
+      // value
+      norm(7.5); setT(...GRIGIO);
+      txt(value+'h',bx+bw+2,y+4);
+    }
+
+    // ════════════════════════════════════════════════
+    // PAGINA 1
+    // ════════════════════════════════════════════════
+
+    // — Header banda blu —
+    setF(...BLU_SCURO); doc.rect(0,0,W,38,'F');
+    setF(...BLU); doc.rect(0,36,W,2,'F');
+
+    // Logo
+    bold(13); setT(...BIANCO);
+    txt('MedHub AI',ML,14);
+    norm(8); setT(147,197,253);
+    txt('Profilo Digitale Personale',ML,20);
+
+    // Data + nome
+    norm(8); setT(147,197,253);
+    txt(new Date().toLocaleDateString('it-IT'),W-MR,14,{align:'right'});
+    txt(tv('ana-nome')+' '+tv('ana-cognome'),W-MR,20,{align:'right'});
+
+    // Specializzazione + regione
+    norm(8); setT(186,230,253);
+    const spec=tv('q1')||'—';
+    txt(spec+' — '+($('ana-regione').value||'—'),ML,28);
+    txt(rv('q2')||'—',W-MR,28,{align:'right'});
+
+    let y=46;
+
+    // — Persona card —
+    setF(...BLU_PALL); doc.roundedRect(ML,y,W-ML-MR,32,3,3,'F');
+    setD(...BLU_CHIARO); doc.setLineWidth(0.5);
+    doc.roundedRect(ML,y,W-ML-MR,32,3,3,'S');
+
+    bold(16); setT(...BLU_SCURO);
+    txt(p.name,ML+6,y+11);
+
+    norm(8.5); setT(...GRIGIO);
+    const descLines=doc.splitTextToSize(p.desc,W-ML-MR-12);
+    txt(descLines.slice(0,2),ML+6,y+18);
+
+    // score badge
+    setF(...scoreColor); doc.roundedRect(W-MR-28,y+6,26,14,2,2,'F');
+    bold(14); setT(...BIANCO);
+    txt(score+'/100',W-MR-15,y+14,{align:'center'});
+    norm(6); setT(...BIANCO);
+    txt('SCORE',W-MR-15,y+19,{align:'center'});
+
+    y+=38;
+
+    // — Score bar con fasce —
+    y=sectionTitle('Propensione Digitale',y);
+    const barTotW=W-ML-MR;
+    const personaFasce=[
+      {label:'Tradizionalista',pct:0.25,color:[156,163,175]},
+      {label:'Sommerso',pct:0.20,color:ARANCIO},
+      {label:'Curioso',pct:0.17,color:[37,99,235]},
+      {label:'Pioniere',pct:0.16,color:BLU},
+      {label:'Visionario',pct:0.22,color:VERDE}
+    ];
+    let bx=ML;
+    personaFasce.forEach((f,i)=>{
+      const fw=barTotW*f.pct;
+      const isActive=(
+        (i===0&&score<=25)||(i===1&&score>=26&&score<=45)||
+        (i===2&&score>=46&&score<=62)||(i===3&&score>=63&&score<=78)||(i===4&&score>=79)
+      );
+      setF(...(isActive?f.color:[226,232,240]));
+      doc.rect(bx,y,fw-0.5,6,'F');
+      norm(5.5); setT(isActive?255:100,isActive?255:116,isActive?255:139);
+      if(fw>20) txt(f.label,bx+fw/2,y+4,{align:'center'});
+      bx+=fw;
+    });
+    // marker
+    const markerX=ML+barTotW*(score/100);
+    setF(...scoreColor); doc.triangle(markerX-2,y+6,markerX+2,y+6,markerX,y+9,'F');
+    y+=14;
+
+    // — Traits —
+    y=sectionTitle('Caratteristiche del Profilo',y);
+    const traitsPerRow=2;
+    const tW=(W-ML-MR-4)/traitsPerRow;
+    p.traits.forEach((t,i)=>{
+      const tx=ML+(i%traitsPerRow)*(tW+4);
+      const ty=y+Math.floor(i/traitsPerRow)*8;
+      setF(...BLU_PALL); doc.roundedRect(tx,ty-4,tW,7,1.5,1.5,'F');
+      setF(...BLU); doc.circle(tx+4,ty-0.5,1.2,'F');
+      norm(8); setT(...BLU_SCURO);
+      txt(t,tx+8,ty);
+    });
+    y+=Math.ceil(p.traits.length/traitsPerRow)*8+4;
+
+    // — KPI row —
+    y=sectionTitle('I Tuoi Numeri',y);
+    const adminH=fh('b')+fh('c')+fh('d')+fh('e');
+    const clinH=fh('a');
+    const totH=adminH+clinH;
+    const adminPct=totH>0?Math.round((adminH/totH)*100):0;
+    const kpis=[
+      {label:'Ore admin/giorno',  value:adminH.toFixed(1)+'h'},
+      {label:'Tempo non clinico', value:adminPct+'%'},
+      {label:'Budget mensile',    value:rv('q16')||'—'},
+      {label:'No-show/mese',      value:rv('q12')||'—'}
+    ];
+    const kW=(W-ML-MR-6)/4;
+    kpis.forEach((k,i)=>{
+      kpiBox(ML+i*(kW+2),y,kW,16,k.label,k.value,BLU);
+    });
+    y+=22;
+
+    // — Ore giornaliere (barre orizzontali) —
+    y=sectionTitle('Distribuzione Ore Giornaliere',y);
+    const hBars=[
+      {label:'Visite cliniche',    v:fh('a'), color:VERDE},
+      {label:'Documentazione',     v:fh('b'), color:ARANCIO},
+      {label:'Burocrazia',         v:fh('c'), color:[220,38,38]},
+      {label:'Agenda',             v:fh('d'), color:BLU},
+      {label:'Comunicazione paz.', v:fh('e'), color:[124,58,237]},
+      {label:'ECM/Aggiornamento',  v:fh('f'), color:[6,182,212]}
+    ].filter(b=>b.v>0);
+    const maxHv=Math.max(...hBars.map(b=>b.v),0.1);
+    hBars.forEach(b=>{
+      hBar(b.label,b.v,maxHv,ML,y,W-ML-MR,b.color);
+      y+=8;
+    });
+    y+=2;
+
+    // — Footer pagina 1 —
+    setF(248,250,252); doc.rect(0,H-12,W,12,'F');
+    setD(...BLU_CHIARO); doc.setLineWidth(0.3); doc.line(0,H-12,W,H-12);
+    norm(7); setT(...GRIGIO);
+    txt('MedHub AI — Ricerca sul campo 2026',ML,H-5);
+    txt('Pagina 1 di 2',W-MR,H-5,{align:'right'});
+
+    // ════════════════════════════════════════════════
+    // PAGINA 2
+    // ════════════════════════════════════════════════
+    doc.addPage();
+    setF(...BLU_SCURO); doc.rect(0,0,W,14,'F');
+    bold(9); setT(...BIANCO); txt('MedHub AI — Profilo Digitale',ML,9);
+    norm(8); setT(147,197,253); txt(p.name,W-MR,9,{align:'right'});
+
+    y=22;
+
+    // — Propensione AI per area (barre orizzontali) —
+    y=sectionTitle('Propensione AI per Area (scala 1-5)',y);
+    const aiLabels=[
+      'Referti e documentazione automatica',
+      'Diagnosi differenziale e farmaci',
+      'Gestione agenda e promemoria',
+      'Marketing e acquisizione pazienti',
+      'Aggiornamento ECM e formazione',
+      'Report e analytics studio',
+      'Fatturazione e burocrazia',
+      'Comunicazione post-visita'
+    ];
+    const aiColors=[BLU_SCURO,BLU,[37,99,235],[6,182,212],VERDE,[124,58,237],ARANCIO,[234,179,8]];
+    aiLabels.forEach((label,i)=>{
+      const v=parseInt(scaleVal(i)||0);
+      if(v===0) return;
+      // label
+      norm(8); setT(...NERO);
+      const lw=68;
+      txt(doc.splitTextToSize(label,lw)[0],ML,y+4);
+      // barre 5 quadratini
+      const sqX=ML+lw+2; const sqSize=6; const sqGap=2;
+      for(let s=1;s<=5;s++){
+        const sx=sqX+(s-1)*(sqSize+sqGap);
+        if(s<=v){ setF(...aiColors[i]); }
+        else { setF(226,232,240); }
+        doc.roundedRect(sx,y,sqSize,sqSize,1,1,'F');
+        if(s<=v){ setT(...BIANCO); bold(6.5); txt(String(s),sx+sqSize/2,y+4.5,{align:'center'}); }
+      }
+      // valore testuale
+      norm(7.5); setT(...GRIGIO);
+      const labelMap={1:'Per niente',2:'Poco',3:'Abbastanza',4:'Molto',5:'Fondamentale'};
+      txt(labelMap[v]||'',sqX+5*(sqSize+sqGap)+2,y+4.5);
+      y+=10;
+    });
+    y+=4;
+
+    // — Risposte chiave —
+    y=sectionTitle('Risposte Chiave',y);
+    const risposte=[
+      {domanda:'Attività più frustrante',     valore:rv('q7')||'—'},
+      {domanda:'Ore delegabili/settimana',    valore:rv('q8')||'—'},
+      {domanda:'Soddisfazione strumenti',     valore:rv('q10')||'—'},
+      {domanda:'Uso attuale di AI',           valore:rv('q15')||'—'},
+      {domanda:'Willingness to pay',          valore:rv('q16')||'—'},
+      {domanda:'Configurazione studio',       valore:rv('q4')||'—'},
+      {domanda:'No-show mensili',             valore:rv('q12')||'—'},
+      {domanda:'Spesa mensile strumenti',     valore:rv('q13')||'—'}
+    ];
+    risposte.forEach((r,i)=>{
+      const rowY=y+i*9;
+      if(i%2===0){ setF(248,250,252); doc.rect(ML,rowY-3,W-ML-MR,8,'F'); }
+      bold(8); setT(...BLU_SCURO);
+      txt(r.domanda+':',ML+2,rowY+2);
+      norm(8); setT(...NERO);
+      const vlines=doc.splitTextToSize(r.valore,W-ML-MR-60);
+      txt(vlines[0],ML+62,rowY+2);
+    });
+    y+=risposte.length*9+6;
+
+    // — Cosa cambieresti —
+    y=sectionTitle('In Parole Tue',y);
+    setF(...BLU_PALL); doc.roundedRect(ML,y,W-ML-MR,24,2,2,'F');
+    setD(...BLU_CHIARO); doc.setLineWidth(0.4);
+    doc.roundedRect(ML,y,W-ML-MR,24,2,2,'S');
+    // virgolette decorative
+    bold(28); setT(...BLU_CHIARO);
+    txt('"',ML+3,y+12);
+    // testo
+    norm(8.5); setT(...BLU_SCURO);
+    const q17text=tv('q17')||'—';
+    const q17lines=doc.splitTextToSize(q17text,W-ML-MR-14);
+    txt(q17lines.slice(0,3),ML+10,y+7);
+    y+=30;
+
+    // — Cosa significa per te —
+    y=sectionTitle('Raccomandazione Personalizzata',y);
+    setF(240,249,255); doc.roundedRect(ML,y,W-ML-MR,22,2,2,'F');
+    norm(9); setT(...NERO);
+    const implLines=doc.splitTextToSize(p.implication,W-ML-MR-8);
+    txt(implLines.slice(0,4),ML+4,y+6);
+    y+=28;
+
+    // — Footer pagina 2 —
+    setF(248,250,252); doc.rect(0,H-20,W,20,'F');
+    setD(...BLU_CHIARO); doc.setLineWidth(0.3); doc.line(0,H-20,W,H-20);
+    // disclaimer
+    norm(6.5); setT(...GRIGIO);
+    const disc='Questo profilo è generato automaticamente sulla base delle risposte fornite nel questionario MedHub AI. I dati sono trattati nel rispetto del GDPR.';
+    txt(doc.splitTextToSize(disc,W-ML-MR),ML,H-14);
+    norm(7); setT(...GRIGIO);
+    txt('MedHub AI — Ricerca sul campo 2026',ML,H-5);
+    txt('Pagina 2 di 2',W-MR,H-5,{align:'right'});
+
+    doc.save('MedHub_Profilo_'+p.id+'_'+tv('ana-cognome')+'.pdf');
+
+  }catch(err){
+    console.error('PDF error:',err);
+    alert('Errore PDF: '+err.message+'. Sei connesso a internet?');
+  }
+}
+</script>
+</body>
+</html>
