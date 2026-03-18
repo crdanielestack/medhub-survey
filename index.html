@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MedHub AI — Ricerca sul Campo</title>
+<title>DocHub — Ricerca sul Campo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
@@ -162,7 +162,7 @@ main{max-width:700px;margin:0 auto;padding:100px 24px 80px;}
 
 <div id="progress-bar" style="width:0%"></div>
 <header>
-  <div class="logo">Med<span>Hub</span> AI</div>
+  <div class="logo">Doc<span>Hub</span> AI</div>
   <div class="step-counter" id="step-label">Ricerca sul campo</div>
 </header>
 <main>
@@ -792,7 +792,7 @@ async function submitForm(){
   const scaleRes=scaleItems.map((item,i)=>`${item}: ${scaleVal(i)||'—'}/5`).join('\n');
 
   const payload={
-    _subject:`MedHub AI — ${p.name} | Score ${score}/100 | ${new Date().toLocaleDateString('it-IT')}`,
+    _subject:`DocHub — ${p.name} | Score ${score}/100 | ${new Date().toLocaleDateString('it-IT')}`,
     /* ANAGRAFICA */
     nome: tv('ana-nome'),
     cognome: tv('ana-cognome'),
@@ -884,310 +884,210 @@ function generatePDF(){
   try{
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const W=210,H=297,ML=20,MR=20,CT=W/2;
+    const W=210,H=297,ML=18,MR=18,CW=W-ML-MR;
     const score=calcScore();
     const p=getPersona(score);
 
-    // PALETTE
-    const BLU_SCURO=[26,58,108];
-    const BLU=[41,98,174];
-    const BLU_CHIARO=[219,234,254];
-    const BLU_PALL=[239,246,255];
-    const GRIGIO=[100,116,139];
-    const GRIGIO_CH=[241,245,249];
-    const NERO=[30,30,30];
-    const BIANCO=[255,255,255];
-    const VERDE=[22,163,74];
-    const ARANCIO=[234,88,12];
+    const C={
+      blu_scuro:[30,58,138], blu:[29,78,216], blu_chiaro:[191,219,254],
+      blu_pall:[239,246,255], grigio:[100,116,139], grigio_ch:[248,250,252],
+      nero:[30,41,59], bianco:[255,255,255], verde:[22,163,74],
+      arancio:[234,88,12], rosso:[220,38,38], bordo:[226,232,240],
+      sfondo:[241,245,249], testo_mut:[148,163,184]
+    };
 
-    // colore per score
-    const scoreColor = score>=79?VERDE : score>=63?BLU : score>=46?[37,99,235] : score>=26?ARANCIO:[156,163,175];
+    const F=(...c)=>doc.setFillColor(...c);
+    const T=(...c)=>doc.setTextColor(...c);
+    const D=(...c)=>doc.setDrawColor(...c);
+    const B=(sz)=>{ doc.setFont('helvetica','bold'); doc.setFontSize(sz); };
+    const N=(sz)=>{ doc.setFont('helvetica','normal'); doc.setFontSize(sz); };
+    const TX=(t,x,y,o)=>doc.text(String(t||''),x,y,o||{});
+    const LN=(x1,y1,x2,y2,w)=>{ doc.setLineWidth(w||0.3); doc.line(x1,y1,x2,y2); };
+    const RR=(x,y,w,h,fill,r)=>{ if(fill)doc.roundedRect(x,y,w,h,r||2,r||2,'F'); else doc.roundedRect(x,y,w,h,r||2,r||2,'S'); };
+    const SP=(txt,w)=>doc.splitTextToSize(String(txt||''),w);
 
-    // ── helper functions
-    const setF=(r,g,b)=>doc.setFillColor(r,g,b);
-    const setT=(r,g,b)=>doc.setTextColor(r,g,b);
-    const setD=(r,g,b)=>doc.setDrawColor(r,g,b);
-    const bold=(sz)=>{ doc.setFont('helvetica','bold'); doc.setFontSize(sz); };
-    const norm=(sz)=>{ doc.setFont('helvetica','normal'); doc.setFontSize(sz); };
-    const txt=(text,x,y,opts)=>doc.text(String(text),x,y,opts||{});
-
-    function sectionTitle(label,y){
-      setT(...BLU); bold(7.5);
-      txt(label.toUpperCase(),ML,y);
-      setD(...BLU_CHIARO); doc.setLineWidth(0.3);
-      doc.line(ML,y+1.5,W-MR,y+1.5);
-      setT(...NERO);
-      return y+6;
+    function secTitle(label,y){
+      B(7); T(...C.blu_scuro); TX(label.toUpperCase(),ML,y);
+      D(...C.blu_chiaro); doc.setLineWidth(0.4); doc.line(ML,y+2,W-MR,y+2);
+      return y+7;
+    }
+    function kpiBox(x,y,w,h,label,val,color){
+      F(...C.grigio_ch); RR(x,y,w,h,true,2);
+      F(...(color||C.blu)); doc.rect(x,y,1.5,h,'F');
+      N(6); T(...C.grigio); TX(label,x+4,y+5);
+      B(9); T(...C.nero); TX(SP(val,w-7)[0],x+4,y+11);
+    }
+    function hBar(label,val,maxV,y,color){
+      N(8); T(...C.nero);
+      const LW=54,BX=ML+LW+3,BW=CW-LW-14,BH=5.5;
+      TX(SP(label,LW)[0],ML,y+4);
+      F(...C.bordo); RR(BX,y,BW,BH,true,1);
+      if(maxV>0){ const fl=Math.max(3,(val/maxV)*BW); F(...color); RR(BX,y,fl,BH,true,1); }
+      N(7); T(...C.grigio); TX(val+'h',BX+BW+2,y+4.5);
     }
 
-    function kpiBox(x,y,w,h,label,value,color){
-      setF(...GRIGIO_CH); doc.roundedRect(x,y,w,h,2,2,'F');
-      setD(...BLU_CHIARO); doc.setLineWidth(0.4);
-      doc.roundedRect(x,y,w,h,2,2,'S');
-      // left accent bar
-      setF(...(color||BLU)); doc.rect(x,y,1.5,h,'F');
-      norm(6.5); setT(...GRIGIO);
-      txt(label,x+4,y+5);
-      bold(9); setT(...NERO);
-      const vlines=doc.splitTextToSize(String(value),w-6);
-      txt(vlines[0]||'—',x+4,y+11);
-    }
+    // ═══ PAGINA 1 ═══
 
-    function hBar(label,value,maxVal,x,y,barAreaW,color){
-      // label
-      norm(8); setT(...NERO);
-      const lw=52;
-      const labelLines=doc.splitTextToSize(label,lw);
-      txt(labelLines[0],x,y+4);
-      // background bar
-      const bx=x+lw+2; const bh=5;
-      const bw=barAreaW-lw-14;
-      setF(226,232,240); doc.roundedRect(bx,y,bw,bh,1,1,'F');
-      // filled bar
-      const fill=maxVal>0?Math.max(3,(value/maxVal)*bw):0;
-      if(fill>0){ setF(...color); doc.roundedRect(bx,y,fill,bh,1,1,'F'); }
-      // value
-      norm(7.5); setT(...GRIGIO);
-      txt(value+'h',bx+bw+2,y+4);
-    }
+    F(...C.blu_scuro); doc.rect(0,0,W,42,'F');
+    F(...C.blu); doc.rect(0,40,W,2,'F');
 
-    // ════════════════════════════════════════════════
-    // PAGINA 1
-    // ════════════════════════════════════════════════
+    B(14); T(...C.bianco); TX('DocHub',ML,14);
+    N(8); T(147,197,253); TX('Profilo Digitale Personale',ML,21);
+    N(8); T(147,197,253);
+    TX(new Date().toLocaleDateString('it-IT'),W-MR,14,{align:'right'});
+    TX(tv('ana-nome')+' '+tv('ana-cognome'),W-MR,21,{align:'right'});
+    N(7.5); T(186,230,253);
+    TX(SP((tv('q1')||'')+(($('ana-regione').value)?' — '+$('ana-regione').value:''),90)[0],ML,28);
+    TX(rv('q2')||'',W-MR,28,{align:'right'});
 
-    // — Header banda blu —
-    setF(...BLU_SCURO); doc.rect(0,0,W,38,'F');
-    setF(...BLU); doc.rect(0,36,W,2,'F');
+    B(16); T(...C.bianco); TX(p.name,ML,37);
+    N(7.5); T(147,197,253); TX(p.tag,ML,43);
+    F(...C.blu); RR(W-MR-28,30,26,14,true,3);
+    B(14); T(...C.bianco); TX(String(score),W-MR-15,39,{align:'center'});
+    N(6.5); T(191,219,254); TX('/100',W-MR-15,43,{align:'center'});
 
-    // Logo
-    bold(13); setT(...BIANCO);
-    txt('MedHub AI',ML,14);
-    norm(8); setT(147,197,253);
-    txt('Profilo Digitale Personale',ML,20);
+    let y=50;
 
-    // Data + nome
-    norm(8); setT(147,197,253);
-    txt(new Date().toLocaleDateString('it-IT'),W-MR,14,{align:'right'});
-    txt(tv('ana-nome')+' '+tv('ana-cognome'),W-MR,20,{align:'right'});
-
-    // Specializzazione + regione
-    norm(8); setT(186,230,253);
-    const spec=tv('q1')||'—';
-    txt(spec+' — '+($('ana-regione').value||'—'),ML,28);
-    txt(rv('q2')||'—',W-MR,28,{align:'right'});
-
-    let y=46;
-
-    // — Persona card —
-    setF(...BLU_PALL); doc.roundedRect(ML,y,W-ML-MR,32,3,3,'F');
-    setD(...BLU_CHIARO); doc.setLineWidth(0.5);
-    doc.roundedRect(ML,y,W-ML-MR,32,3,3,'S');
-
-    bold(16); setT(...BLU_SCURO);
-    txt(p.name,ML+6,y+11);
-
-    norm(8.5); setT(...GRIGIO);
-    const descLines=doc.splitTextToSize(p.desc,W-ML-MR-12);
-    txt(descLines.slice(0,2),ML+6,y+18);
-
-    // score badge
-    setF(...scoreColor); doc.roundedRect(W-MR-28,y+6,26,14,2,2,'F');
-    bold(14); setT(...BIANCO);
-    txt(score+'/100',W-MR-15,y+14,{align:'center'});
-    norm(6); setT(...BIANCO);
-    txt('SCORE',W-MR-15,y+19,{align:'center'});
-
-    y+=38;
-
-    // — Score bar con fasce —
-    y=sectionTitle('Propensione Digitale',y);
-    const barTotW=W-ML-MR;
-    const personaFasce=[
-      {label:'Tradizionalista',pct:0.25,color:[156,163,175]},
-      {label:'Sommerso',pct:0.20,color:ARANCIO},
-      {label:'Curioso',pct:0.17,color:[37,99,235]},
-      {label:'Pioniere',pct:0.16,color:BLU},
-      {label:'Visionario',pct:0.22,color:VERDE}
+    y=secTitle('Propensione Digitale',y);
+    const fasce=[
+      {l:'Tradizionalista',pct:0.25,col:[148,163,175]},
+      {l:'Sommerso',pct:0.20,col:[249,115,22]},
+      {l:'Curioso',pct:0.17,col:[59,130,246]},
+      {l:'Pioniere',pct:0.16,col:[29,78,216]},
+      {l:'Visionario',pct:0.22,col:[22,163,74]}
     ];
+    const active=(score<=25?0:score<=45?1:score<=62?2:score<=78?3:4);
     let bx=ML;
-    personaFasce.forEach((f,i)=>{
-      const fw=barTotW*f.pct;
-      const isActive=(
-        (i===0&&score<=25)||(i===1&&score>=26&&score<=45)||
-        (i===2&&score>=46&&score<=62)||(i===3&&score>=63&&score<=78)||(i===4&&score>=79)
-      );
-      setF(...(isActive?f.color:[226,232,240]));
-      doc.rect(bx,y,fw-0.5,6,'F');
-      norm(5.5); setT(isActive?255:100,isActive?255:116,isActive?255:139);
-      if(fw>20) txt(f.label,bx+fw/2,y+4,{align:'center'});
+    fasce.forEach((f,i)=>{
+      const fw=CW*f.pct;
+      F(...(i===active?f.col:[226,232,240]));
+      doc.rect(bx,y,fw-0.4,7,'F');
+      if(fw>18){ N(5.5); T(i===active?255:150,i===active?255:150,i===active?255:150); TX(f.l,bx+fw/2,y+4.8,{align:'center'}); }
       bx+=fw;
     });
-    // marker
-    const markerX=ML+barTotW*(score/100);
-    setF(...scoreColor); doc.triangle(markerX-2,y+6,markerX+2,y+6,markerX,y+9,'F');
-    y+=14;
+    const mx=ML+CW*(score/100);
+    F(...C.blu); doc.triangle(mx-2,y+7,mx+2,y+7,mx,y+10,'F');
+    y+=16;
 
-    // — Traits —
-    y=sectionTitle('Caratteristiche del Profilo',y);
-    const traitsPerRow=2;
-    const tW=(W-ML-MR-4)/traitsPerRow;
+    y=secTitle('Profilo',y);
+    F(...C.blu_pall); RR(ML,y,CW,20,true,3);
+    F(...C.blu); doc.rect(ML,y,1.8,20,'F');
+    N(8.5); T(...C.nero); TX(SP(p.desc,CW-10).slice(0,3),ML+5,y+6);
+    y+=23;
+
+    const tW=(CW-4)/2;
     p.traits.forEach((t,i)=>{
-      const tx=ML+(i%traitsPerRow)*(tW+4);
-      const ty=y+Math.floor(i/traitsPerRow)*8;
-      setF(...BLU_PALL); doc.roundedRect(tx,ty-4,tW,7,1.5,1.5,'F');
-      setF(...BLU); doc.circle(tx+4,ty-0.5,1.2,'F');
-      norm(8); setT(...BLU_SCURO);
-      txt(t,tx+8,ty);
+      const tx=ML+(i%2)*(tW+4), ty=y+Math.floor(i/2)*8;
+      F(...C.blu_pall); RR(tx,ty-4,tW,7,true,1.5);
+      F(...C.blu); doc.circle(tx+4,ty-0.5,1.2,'F');
+      N(7.5); T(...C.blu_scuro); TX(t,tx+8,ty);
     });
-    y+=Math.ceil(p.traits.length/traitsPerRow)*8+4;
+    y+=Math.ceil(p.traits.length/2)*8+4;
 
-    // — KPI row —
-    y=sectionTitle('I Tuoi Numeri',y);
+    y=secTitle('I Tuoi Numeri',y);
     const adminH=fh('b')+fh('c')+fh('d')+fh('e');
-    const clinH=fh('a');
-    const totH=adminH+clinH;
+    const clinH=fh('a'),totH=adminH+clinH;
     const adminPct=totH>0?Math.round((adminH/totH)*100):0;
     const kpis=[
-      {label:'Ore admin/giorno',  value:adminH.toFixed(1)+'h'},
-      {label:'Tempo non clinico', value:adminPct+'%'},
-      {label:'Budget mensile',    value:rv('q16')||'—'},
-      {label:'No-show/mese',      value:rv('q12')||'—'}
+      {l:'Ore admin/giorno',v:adminH.toFixed(1)+'h',c:C.arancio},
+      {l:'Tempo non clinico',v:adminPct+'%',c:C.rosso},
+      {l:'Budget mensile',v:rv('q16')||'—',c:C.blu},
+      {l:'No-show/mese',v:rv('q12')||'—',c:C.grigio}
     ];
-    const kW=(W-ML-MR-6)/4;
-    kpis.forEach((k,i)=>{
-      kpiBox(ML+i*(kW+2),y,kW,16,k.label,k.value,BLU);
-    });
-    y+=22;
+    const kW=(CW-6)/4;
+    kpis.forEach((k,i)=>kpiBox(ML+i*(kW+2),y,kW,16,k.l,k.v,k.c));
+    y+=21;
 
-    // — Ore giornaliere (barre orizzontali) —
-    y=sectionTitle('Distribuzione Ore Giornaliere',y);
-    const hBars=[
-      {label:'Visite cliniche',    v:fh('a'), color:VERDE},
-      {label:'Documentazione',     v:fh('b'), color:ARANCIO},
-      {label:'Burocrazia',         v:fh('c'), color:[220,38,38]},
-      {label:'Agenda',             v:fh('d'), color:BLU},
-      {label:'Comunicazione paz.', v:fh('e'), color:[124,58,237]},
-      {label:'ECM/Aggiornamento',  v:fh('f'), color:[6,182,212]}
+    y=secTitle('Distribuzione Ore Giornaliere',y);
+    const hbData=[
+      {l:'Visite cliniche',v:fh('a'),c:C.verde},
+      {l:'Documentazione',v:fh('b'),c:C.arancio},
+      {l:'Burocrazia',v:fh('c'),c:C.rosso},
+      {l:'Agenda',v:fh('d'),c:C.blu},
+      {l:'Comunicazione paz.',v:fh('e'),c:[124,58,237]},
+      {l:'ECM/Aggiornamento',v:fh('f'),c:[8,145,178]}
     ].filter(b=>b.v>0);
-    const maxHv=Math.max(...hBars.map(b=>b.v),0.1);
-    hBars.forEach(b=>{
-      hBar(b.label,b.v,maxHv,ML,y,W-ML-MR,b.color);
-      y+=8;
-    });
-    y+=2;
+    const maxHv=Math.max(...hbData.map(b=>b.v),0.1);
+    hbData.forEach(b=>{ hBar(b.l,b.v,maxHv,y,b.c); y+=8.5; });
 
-    // — Footer pagina 1 —
-    setF(248,250,252); doc.rect(0,H-12,W,12,'F');
-    setD(...BLU_CHIARO); doc.setLineWidth(0.3); doc.line(0,H-12,W,H-12);
-    norm(7); setT(...GRIGIO);
-    txt('MedHub AI — Ricerca sul campo 2026',ML,H-5);
-    txt('Pagina 1 di 2',W-MR,H-5,{align:'right'});
+    F(...C.sfondo); doc.rect(0,H-12,W,12,'F');
+    D(...C.bordo); LN(0,H-12,W,H-12,0.3);
+    N(7); T(...C.grigio);
+    TX('DocHub — Ricerca sul campo 2026',ML,H-5);
+    TX('Pagina 1 di 2',W-MR,H-5,{align:'right'});
 
-    // ════════════════════════════════════════════════
-    // PAGINA 2
-    // ════════════════════════════════════════════════
+    // ═══ PAGINA 2 ═══
     doc.addPage();
-    setF(...BLU_SCURO); doc.rect(0,0,W,14,'F');
-    bold(9); setT(...BIANCO); txt('MedHub AI — Profilo Digitale',ML,9);
-    norm(8); setT(147,197,253); txt(p.name,W-MR,9,{align:'right'});
-
+    F(...C.blu_scuro); doc.rect(0,0,W,14,'F');
+    B(9); T(...C.bianco); TX('DocHub',ML,9);
+    N(7.5); T(147,197,253); TX(p.name+' — '+tv('ana-nome')+' '+tv('ana-cognome'),W-MR,9,{align:'right'});
     y=22;
 
-    // — Propensione AI per area (barre orizzontali) —
-    y=sectionTitle('Propensione AI per Area (scala 1-5)',y);
-    const aiLabels=[
-      'Referti e documentazione automatica',
-      'Diagnosi differenziale e farmaci',
-      'Gestione agenda e promemoria',
-      'Marketing e acquisizione pazienti',
-      'Aggiornamento ECM e formazione',
-      'Report e analytics studio',
-      'Fatturazione e burocrazia',
-      'Comunicazione post-visita'
-    ];
-    const aiColors=[BLU_SCURO,BLU,[37,99,235],[6,182,212],VERDE,[124,58,237],ARANCIO,[234,179,8]];
-    aiLabels.forEach((label,i)=>{
-      const v=parseInt(scaleVal(i)||0);
-      if(v===0) return;
-      // label
-      norm(8); setT(...NERO);
-      const lw=68;
-      txt(doc.splitTextToSize(label,lw)[0],ML,y+4);
-      // barre 5 quadratini
-      const sqX=ML+lw+2; const sqSize=6; const sqGap=2;
+    y=secTitle('Propensione AI per Area  (scala 1–5)',y);
+    const aiLbls=['Referti e documentazione automatica','Diagnosi differenziale e farmaci','Gestione agenda e promemoria','Marketing e acquisizione pazienti','Aggiornamento ECM e formazione','Report e analytics studio','Fatturazione e burocrazia','Comunicazione post-visita'];
+    const aiCols=[C.blu_scuro,C.blu,[59,130,246],[8,145,178],C.verde,[124,58,237],C.arancio,[234,179,8]];
+    const lMap={1:'Per niente',2:'Poco',3:'Abbastanza',4:'Molto',5:'Fondamentale'};
+    aiLbls.forEach((label,i)=>{
+      const v=parseInt(scaleVal(i)||0); if(!v)return;
+      N(8); T(...C.nero); TX(SP(label,72)[0],ML,y+4.5);
+      const sqX=ML+75,sqS=6,sqG=2.5;
       for(let s=1;s<=5;s++){
-        const sx=sqX+(s-1)*(sqSize+sqGap);
-        if(s<=v){ setF(...aiColors[i]); }
-        else { setF(226,232,240); }
-        doc.roundedRect(sx,y,sqSize,sqSize,1,1,'F');
-        if(s<=v){ setT(...BIANCO); bold(6.5); txt(String(s),sx+sqSize/2,y+4.5,{align:'center'}); }
+        const sx=sqX+(s-1)*(sqS+sqG);
+        if(s<=v){ F(...aiCols[i]); RR(sx,y,sqS,sqS,true,1); N(6); T(...C.bianco); TX(String(s),sx+sqS/2,y+4.5,{align:'center'}); }
+        else { F(...C.bordo); RR(sx,y,sqS,sqS,true,1); }
       }
-      // valore testuale
-      norm(7.5); setT(...GRIGIO);
-      const labelMap={1:'Per niente',2:'Poco',3:'Abbastanza',4:'Molto',5:'Fondamentale'};
-      txt(labelMap[v]||'',sqX+5*(sqSize+sqGap)+2,y+4.5);
-      y+=10;
+      N(7); T(...C.grigio); TX(lMap[v]||'',sqX+5*(sqS+sqG)+3,y+4.5);
+      y+=9.5;
+    });
+    y+=3;
+
+    y=secTitle('Risposte Chiave',y);
+    const risposte=[
+      {k:'Attività più frustrante',v:rv('q7')},
+      {k:'Ore delegabili/settimana',v:rv('q8')},
+      {k:'Soddisfazione strumenti',v:rv('q10')},
+      {k:'Uso attuale AI',v:rv('q15')},
+      {k:'Willingness to pay',v:rv('q16')},
+      {k:'Configurazione studio',v:rv('q4')},
+      {k:'No-show mensili',v:rv('q12')},
+      {k:'Spesa mensile strumenti',v:rv('q13')}
+    ];
+    risposte.forEach((r,i)=>{
+      if(i%2===0){ F(...C.sfondo); doc.rect(ML,y-3.5,CW,8,'F'); }
+      B(7.5); T(...C.blu_scuro); TX((r.k||'')+':',ML+2,y+1);
+      N(8); T(...C.nero); TX(SP(r.v||'—',CW-68)[0],ML+65,y+1);
+      y+=8;
     });
     y+=4;
 
-    // — Risposte chiave —
-    y=sectionTitle('Risposte Chiave',y);
-    const risposte=[
-      {domanda:'Attività più frustrante',     valore:rv('q7')||'—'},
-      {domanda:'Ore delegabili/settimana',    valore:rv('q8')||'—'},
-      {domanda:'Soddisfazione strumenti',     valore:rv('q10')||'—'},
-      {domanda:'Uso attuale di AI',           valore:rv('q15')||'—'},
-      {domanda:'Willingness to pay',          valore:rv('q16')||'—'},
-      {domanda:'Configurazione studio',       valore:rv('q4')||'—'},
-      {domanda:'No-show mensili',             valore:rv('q12')||'—'},
-      {domanda:'Spesa mensile strumenti',     valore:rv('q13')||'—'}
-    ];
-    risposte.forEach((r,i)=>{
-      const rowY=y+i*9;
-      if(i%2===0){ setF(248,250,252); doc.rect(ML,rowY-3,W-ML-MR,8,'F'); }
-      bold(8); setT(...BLU_SCURO);
-      txt(r.domanda+':',ML+2,rowY+2);
-      norm(8); setT(...NERO);
-      const vlines=doc.splitTextToSize(r.valore,W-ML-MR-60);
-      txt(vlines[0],ML+62,rowY+2);
-    });
-    y+=risposte.length*9+6;
+    y=secTitle('In Parole Tue',y);
+    const q17=tv('q17')||'—';
+    const q17lines=SP(q17,CW-14);
+    const qh=Math.max(18,q17lines.length*5.5+10);
+    F(...C.blu_pall); RR(ML,y,CW,qh,true,3);
+    D(...C.blu_chiaro); doc.setLineWidth(0.4); RR(ML,y,CW,qh,false,3);
+    B(18); T(...C.blu_chiaro); TX('"',ML+3,y+11);
+    N(9); T(...C.blu_scuro); TX(q17lines.slice(0,4),ML+10,y+7);
+    y+=qh+5;
 
-    // — Cosa cambieresti —
-    y=sectionTitle('In Parole Tue',y);
-    setF(...BLU_PALL); doc.roundedRect(ML,y,W-ML-MR,24,2,2,'F');
-    setD(...BLU_CHIARO); doc.setLineWidth(0.4);
-    doc.roundedRect(ML,y,W-ML-MR,24,2,2,'S');
-    // virgolette decorative
-    bold(28); setT(...BLU_CHIARO);
-    txt('"',ML+3,y+12);
-    // testo
-    norm(8.5); setT(...BLU_SCURO);
-    const q17text=tv('q17')||'—';
-    const q17lines=doc.splitTextToSize(q17text,W-ML-MR-14);
-    txt(q17lines.slice(0,3),ML+10,y+7);
-    y+=30;
+    if(y<260){
+      y=secTitle('Raccomandazione Personalizzata',y);
+      const implLines=SP(p.implication||'',CW-10);
+      const ih=Math.max(18,implLines.length*5.5+10);
+      F(240,249,255); RR(ML,y,CW,ih,true,3);
+      F(14,165,233); doc.rect(ML,y,2,ih,'F');
+      N(8.5); T(12,74,110); TX(implLines.slice(0,5),ML+6,y+7);
+    }
 
-    // — Cosa significa per te —
-    y=sectionTitle('Raccomandazione Personalizzata',y);
-    setF(240,249,255); doc.roundedRect(ML,y,W-ML-MR,22,2,2,'F');
-    norm(9); setT(...NERO);
-    const implLines=doc.splitTextToSize(p.implication,W-ML-MR-8);
-    txt(implLines.slice(0,4),ML+4,y+6);
-    y+=28;
+    F(...C.sfondo); doc.rect(0,H-20,W,20,'F');
+    D(...C.bordo); LN(0,H-20,W,H-20,0.3);
+    N(6.5); T(...C.testo_mut);
+    TX(SP('Questo profilo è generato automaticamente da DocHub. I dati sono trattati nel rispetto del GDPR.',CW),ML,H-13);
+    N(7); T(...C.grigio);
+    TX('DocHub — Ricerca sul campo 2026',ML,H-5);
+    TX('Pagina 2 di 2',W-MR,H-5,{align:'right'});
 
-    // — Footer pagina 2 —
-    setF(248,250,252); doc.rect(0,H-20,W,20,'F');
-    setD(...BLU_CHIARO); doc.setLineWidth(0.3); doc.line(0,H-20,W,H-20);
-    // disclaimer
-    norm(6.5); setT(...GRIGIO);
-    const disc='Questo profilo è generato automaticamente sulla base delle risposte fornite nel questionario MedHub AI. I dati sono trattati nel rispetto del GDPR.';
-    txt(doc.splitTextToSize(disc,W-ML-MR),ML,H-14);
-    norm(7); setT(...GRIGIO);
-    txt('MedHub AI — Ricerca sul campo 2026',ML,H-5);
-    txt('Pagina 2 di 2',W-MR,H-5,{align:'right'});
-
-    doc.save('MedHub_Profilo_'+p.id+'_'+tv('ana-cognome')+'.pdf');
+    doc.save('DocHub_Profilo_'+p.id+'_'+tv('ana-cognome')+'.pdf');
 
   }catch(err){
     console.error('PDF error:',err);
