@@ -1254,6 +1254,34 @@
       </div>
 
       <div class="form-group">
+        <label>Se usi un software gestionale, qual è? *</label>
+        <select name="software_gestionale" onchange="handleSoftwareGestionaleChange()" style="width:100%;padding:12px 16px;border:2px solid var(--gray-200);border-radius:8px;font-size:15px;font-family:inherit;color:var(--gray-700);background:#fff;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;">
+          <option value="">-- Seleziona --</option>
+          <option value="Ippocrate">Ippocrate</option>
+          <option value="Medicard">Medicard</option>
+          <option value="Nemo">Nemo (Clinic Master)</option>
+          <option value="Healtheon">Healtheon</option>
+          <option value="Doctolib">Doctolib</option>
+          <option value="MedDesk">MedDesk</option>
+          <option value="Zucchetti">Zucchetti Medico</option>
+          <option value="Winmedical">Winmedical</option>
+          <option value="Esaote">Esaote / RIS-PACS</option>
+          <option value="Danea">Danea Easyfatt</option>
+          <option value="nessuno">Non uso nessun gestionale</option>
+          <option value="altro_gestionale">Altro</option>
+        </select>
+        <div id="software-altro" style="display:none;margin-top:10px;">
+          <input type="text" name="software_gestionale_altro" placeholder="Specifica il nome del software">
+        </div>
+        <div class="error-message"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Come generi oggi un referto o lettera clinica? Descrivi brevemente i passaggi</label>
+        <textarea name="workflow_attuale" placeholder="Es. Apro il gestionale → detto o scrivo a mano → copio in Word → stampo e firmo → scansiono per archivio..." rows="3" style="resize:vertical;width:100%;padding:12px 16px;border:2px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;color:var(--gray-700);"></textarea>
+      </div>
+
+      <div class="form-group">
         <label>Quanto sei soddisfatto degli strumenti che usi? *</label>
         <div class="radio-group">
           <label class="radio-option">
@@ -1458,6 +1486,40 @@
         <div class="error-message"></div>
       </div>
 
+      <div class="form-group">
+        <label>Cosa ti convincerebbe a provare uno strumento nuovo per il tuo studio? *</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="trigger_cambio" value="referral">
+            Il consiglio di un collega di fiducia
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="trigger_cambio" value="demo">
+            Una demo pratica di 30 minuti senza impegno
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="trigger_cambio" value="trial">
+            Una prova gratuita di 30 giorni
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="trigger_cambio" value="risparmio">
+            Dati concreti su quanto tempo/denaro risparmio
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="trigger_cambio" value="integrazione">
+            Si integrasse con i tool che già uso
+          </label>
+          <label class="radio-option" onclick="toggleConditionalInput('trigger-altro')">
+            <input type="radio" name="trigger_cambio" value="altro">
+            Altro
+          </label>
+        </div>
+        <div id="trigger-altro" class="conditional-input">
+          <input type="text" name="trigger_cambio_altro" placeholder="Cosa ti convincerebbe?">
+        </div>
+        <div class="error-message"></div>
+      </div>
+
       <div style="flex: 1;"></div>
       <div class="buttons">
         <button class="btn btn-secondary" onclick="prevSlide()">Indietro</button>
@@ -1603,6 +1665,14 @@
         altroInput.classList.add('show');
       } else {
         altroInput.classList.remove('show');
+      }
+    }
+
+    function handleSoftwareGestionaleChange() {
+      const sel = document.querySelector('[name="software_gestionale"]');
+      const altroDiv = document.getElementById('software-altro');
+      if (sel && altroDiv) {
+        altroDiv.style.display = sel.value === 'altro_gestionale' ? 'block' : 'none';
       }
     }
 
@@ -1754,10 +1824,12 @@
 
       if (slideNum === 6) {
         const tools = document.querySelectorAll('[name="tools"]:checked');
+        const softGest = document.querySelector('[name="software_gestionale"]')?.value;
         const sodd = document.querySelector('[name="soddisfazione"]:checked');
         const spesa = document.querySelector('[name="spesa_tools"]:checked');
 
         if (tools.length === 0) { showFieldError('tools', 'Seleziona almeno uno strumento'); isValid = false; }
+        if (!softGest) { showFieldError('software_gestionale', 'Campo obbligatorio'); isValid = false; }
         if (!sodd) { showFieldError('soddisfazione', 'Campo obbligatorio'); isValid = false; }
         if (!spesa) { showFieldError('spesa_tools', 'Campo obbligatorio'); isValid = false; }
       }
@@ -1766,6 +1838,7 @@
         const ai = document.querySelector('[name="exp_ai"]:checked');
         const wtp = document.querySelector('[name="wtp"]:checked');
         const stars = document.querySelectorAll('.star.selected');
+        const trigger = document.querySelector('[name="trigger_cambio"]:checked');
 
         if (!ai) { showFieldError('exp_ai', 'Campo obbligatorio'); isValid = false; }
         if (stars.length === 0) {
@@ -1777,6 +1850,7 @@
           isValid = false;
         }
         if (!wtp) { showFieldError('wtp', 'Campo obbligatorio'); isValid = false; }
+        if (!trigger) { showFieldError('trigger_cambio', 'Campo obbligatorio'); isValid = false; }
       }
 
       if (!isValid) {
@@ -1831,6 +1905,12 @@
       // Tools
       const tools = Array.from(document.querySelectorAll('[name="tools"]:checked')).map(el => el.value);
       data.tools = tools.join(', ');
+      let softwareGest = document.querySelector('[name="software_gestionale"]')?.value || '';
+      if (softwareGest === 'altro_gestionale') {
+        softwareGest = document.querySelector('[name="software_gestionale_altro"]')?.value || 'Altro';
+      }
+      data.software_gestionale = softwareGest;
+      data.workflow_attuale = document.querySelector('[name="workflow_attuale"]')?.value || '';
       data.soddisfazione = document.querySelector('[name="soddisfazione"]:checked')?.value || '';
       data.soddisfazione_key = document.querySelector('[name="soddisfazione"]:checked')?.getAttribute('data-key') || '';
       data.spesa_tools = document.querySelector('[name="spesa_tools"]:checked')?.value || '';
@@ -1848,6 +1928,12 @@
 
       data.wtp = document.querySelector('[name="wtp"]:checked')?.value || '';
       data.wtp_key = document.querySelector('[name="wtp"]:checked')?.getAttribute('data-key') || '';
+
+      let triggerVal = document.querySelector('[name="trigger_cambio"]:checked')?.value || '';
+      if (triggerVal === 'altro') {
+        triggerVal = document.querySelector('[name="trigger_cambio_altro"]')?.value || 'Altro';
+      }
+      data.trigger_cambio = triggerVal;
 
       data.cosa_cambiare = document.querySelector('[name="cosa_cambiare"]')?.value || '';
       data.disponibilita = document.querySelector('[name="disponibilita"]:checked')?.value || '';
